@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mikrotik Link Monitor</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <h1>Mikrotik link monitor</h1>
+    <p class="sub">RouterOS v6 client · GPS distance · CSV · MAVLink NamedValueFloat</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" class="tab active" data-tab="dash">Dashboard</button>
+    <button type="button" class="tab" data-tab="chart">Chart (20 min)</button>
+    <button type="button" class="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <main>
+    <section id="panel-dash" class="panel active">
+      <div class="cards">
+        <div class="card">
+          <h2>Radio</h2>
+          <p id="reach" class="metric">—</p>
+          <dl class="kv" id="link-kv"></dl>
+        </div>
+        <div class="card">
+          <h2>GPS &amp; distance</h2>
+          <p id="gps-line" class="metric">—</p>
+          <p id="dist-line" class="metric accent">—</p>
+        </div>
+        <div class="card">
+          <h2>MAVLink</h2>
+          <p id="mav-errors" class="small muted">—</p>
+          <p class="small"><a id="csv-dl" href="/api/download/csv">Download CSV</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-chart" class="panel">
+      <canvas id="chart" height="120"></canvas>
+    </section>
+
+    <section id="panel-settings" class="panel">
+      <form id="settings-form" class="form-grid">
+        <fieldset>
+          <legend>RouterOS (v6.49.x)</legend>
+          <label>IP <input name="router_ip" type="text" /></label>
+          <label>API port <input name="router_api_port" type="number" min="1" max="65535" /></label>
+          <label>User <input name="router_username" type="text" autocomplete="username" /></label>
+          <label>Password <input name="router_password" type="password" autocomplete="current-password" /></label>
+          <label>Poll interval (s) <input name="poll_interval_s" type="number" step="0.1" min="0.2" max="60" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>Reference point (decimal degrees)</legend>
+          <label>Latitude <input name="reference_latitude" type="text" placeholder="e.g. 33.812" /></label>
+          <label>Longitude <input name="reference_longitude" type="text" placeholder="e.g. -118.389" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>mavlink2rest</legend>
+          <label class="full">Read base (GET)
+            <input name="mavlink_rest_read_base" type="url" />
+          </label>
+          <label class="full">POST URL (NamedValueFloat)
+            <input name="mavlink_rest_post_url" type="url" />
+          </label>
+          <label>GPS component ID <input name="gps_component_id" type="number" min="1" max="255" /></label>
+          <label class="check"><input name="mavlink_enabled" type="checkbox" /> Send NamedValueFloat</label>
+          <label class="check"><input name="mavlink_send_distance" type="checkbox" /> Include distance (MTK_DISTM)</label>
+          <label>Header system ID <input name="mavlink_header_system_id" type="number" min="1" max="255" /></label>
+          <label>Header component ID <input name="mavlink_header_component_id" type="number" min="0" max="255" /></label>
+          <label>Target system <input name="target_system" type="number" min="1" max="255" /></label>
+          <label>Target component <input name="target_component" type="number" min="0" max="255" /></label>
+        </fieldset>
+        <div class="actions full">
+          <button type="submit" class="primary">Save settings</button>
+          <span id="save-msg" class="muted"></span>
+        </div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

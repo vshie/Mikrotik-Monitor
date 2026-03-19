@@ -1,0 +1,13 @@
+services:
+  mikrotik-monitor:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    cap_add:
+      - NET_RAW

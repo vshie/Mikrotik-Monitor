@@ -1,0 +1,6 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+routeros-api==0.17.0
+pydantic==2.10.3
+icmplib==3.0.4

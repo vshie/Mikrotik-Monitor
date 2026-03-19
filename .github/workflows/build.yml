@@ -1,0 +1,23 @@
+name: Build and push BlueOS extension
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and push
+        uses: BlueOS-community/Deploy-BlueOS-Extension@main
+        with:
+          docker-username: ${{ secrets.DOCKER_USERNAME }}
+          docker-password: ${{ secrets.DOCKER_PASSWORD }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-name: mikrotik-monitor
+          image-prefix: blueos-
+          author: ${{ github.repository_owner }}
+          author-email: dev@users.noreply.github.com
+          maintainer: ${{ github.repository_owner }}
+          maintainer-email: dev@users.noreply.github.com
