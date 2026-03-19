@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -17,6 +18,8 @@ from app.mikrotik_client import fetch_registration_table, summarize_link
 from app.reachability import radio_reachable
 from app.settings_store import _data_dir, load_settings
 
+log = logging.getLogger(__name__)
+
 
 @dataclass
 class PollerState:
@@ -29,6 +32,7 @@ class PollerState:
     vehicle_system_id: int = 1
     last_mavlink_errors: list[str] = field(default_factory=list)
     rows_logged: int = 0
+    registration_path: str | None = None
 
 
 _state_lock = Lock()
@@ -56,6 +60,7 @@ def get_state() -> PollerState:
             vehicle_system_id=STATE.vehicle_system_id,
             last_mavlink_errors=list(STATE.last_mavlink_errors),
             rows_logged=STATE.rows_logged,
+            registration_path=STATE.registration_path,
         )
 
 
@@ -83,34 +88,46 @@ async def poller_loop(stop: asyncio.Event) -> None:
         while not stop.is_set():
             s = load_settings()
             interval = float(s.poll_interval_s)
+            link_summary: dict[str, Any] | None = None
+            entries: list[dict[str, Any]] = []
+            reg_detail = ""
+            gps: dict[str, float] | None = None
+            mav_read_err: str | None = None
+
             try:
                 ok, method = await radio_reachable(s.router_ip, s.router_api_port)
-                _update_state(reachable=ok, reach_method=method, last_error=None)
+                _update_state(reachable=ok, reach_method=method)
                 if not ok:
                     _update_state(
-                        last_error=f"Radio unreachable ({s.router_ip}:{s.router_api_port})"
+                        last_error=f"Radio unreachable ({s.router_ip}:{s.router_api_port})",
+                        last_link=None,
+                        registration_path=None,
+                        last_mavlink_errors=[],
                     )
                     await asyncio.wait_for(stop.wait(), timeout=interval)
                     continue
             except asyncio.CancelledError:
                 raise
             except Exception as e:
-                _update_state(reachable=False, last_error=str(e))
+                _update_state(reachable=False, last_error=str(e), registration_path=None)
+                await asyncio.wait_for(stop.wait(), timeout=interval)
+                continue
 
-            link_summary: dict[str, Any] | None = None
-            try:
-                entries = await asyncio.to_thread(
-                    fetch_registration_table,
-                    s.router_ip,
-                    s.router_api_port,
-                    s.router_username,
-                    s.router_password,
-                )
-                link_summary = summarize_link(entries)
-            except Exception as e:
-                _update_state(last_error=f"RouterOS API: {e}")
+            entries, reg_detail = await asyncio.to_thread(
+                fetch_registration_table,
+                s.router_ip,
+                s.router_api_port,
+                s.router_username,
+                s.router_password,
+                plaintext_login=s.router_plaintext_login,
+                try_wifiwave2=s.router_try_wifiwave2,
+            )
+            link_summary = summarize_link(entries)
 
-            gps: dict[str, float] | None = None
+            reg_path = reg_detail if entries else None
+            if not entries and reg_detail:
+                log.info("RouterOS registration empty/diagnostic: %s", reg_detail)
+
             try:
                 sid = await _ensure_system_id(client, s.mavlink_rest_read_base)
                 gps = await fetch_global_position(
@@ -120,7 +137,8 @@ async def poller_loop(stop: asyncio.Event) -> None:
                     client,
                 )
             except Exception as e:
-                _update_state(last_error=f"MAVLink read: {e}")
+                mav_read_err = str(e)
+                log.warning("MAVLink GPS read failed: %s", e, exc_info=True)
 
             dist: float | None = None
             ref_lat = s.reference_latitude
@@ -137,11 +155,30 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 except Exception:
                     dist = None
 
+            status_parts: list[str] = []
+            if not entries:
+                if reg_detail:
+                    status_parts.append(
+                        f"RouterOS: no link data ({reg_detail}). "
+                        "Check API user/password, API service enabled, "
+                        "and try toggling legacy plaintext login in Settings if login fails."
+                    )
+                else:
+                    status_parts.append(
+                        "RouterOS: registration table empty (not associated to an AP?)."
+                    )
+            if mav_read_err:
+                status_parts.append(f"MAVLink GPS: {mav_read_err}")
+
+            combined_error = " ".join(status_parts) if status_parts else None
+
             _update_state(
                 last_link=link_summary,
                 last_gps=gps,
                 last_distance_m=dist,
                 last_mavlink_errors=[],
+                last_error=combined_error,
+                registration_path=reg_path,
             )
 
             ts = datetime.now(timezone.utc).isoformat()

@@ -73,6 +73,14 @@ Change **`docker`** / **`tag`** if you use another registry or image tag. **`ide
 
 Stored in **`/data/settings.json`** on the volume (**plaintext**). Restrict filesystem access accordingly.
 
+### Troubleshooting: ping works but no SNR / signal fields
+
+1. **API login (RouterOS 6.43+)** — Default is **challenge login** (`router_plaintext_login`: **off**). If login still fails, enable **Legacy plaintext API login** in Settings only for very old RouterOS.
+2. **User permissions** — Use a MikroTik user allowed to query interfaces (e.g. **full** group or API policy that permits read).
+3. **Empty registration table** — Metrics exist only when the radio is a **station associated to an AP**. If disconnected, the table is empty (dashboard explains this).
+4. **wifiwave2** — On some **RouterOS 7+** builds, link stats live under **`/interface/wifiwave2/registration-table`**; leave **Also try wifiwave2** enabled (default). On pure 6.x, the second path may error in logs; that is harmless.
+5. **Dashboard** — After updating, the UI shows **RouterOS / MAVLink diagnostic text** when data is missing; check container logs for the same.
+
 ## Local test (Docker Desktop)
 
 ```bash

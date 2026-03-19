@@ -18,6 +18,9 @@ class AppSettings(BaseModel):
     router_api_port: int = 8728
     router_username: str = "admin"
     router_password: str = "admin"
+    # RouterOS 6.43+ uses challenge login; plaintext is for older ROS only.
+    router_plaintext_login: bool = False
+    router_try_wifiwave2: bool = True
     poll_interval_s: float = Field(default=1.0, ge=0.2, le=60.0)
 
     mavlink_rest_read_base: str = "http://host.docker.internal/mavlink2rest/mavlink"

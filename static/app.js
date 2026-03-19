@@ -38,6 +38,23 @@ async function refreshStatus() {
       : "Unreachable";
     $("#reach").style.color = good ? "var(--good)" : "var(--bad)";
 
+    const errEl = $("#last-error");
+    const pathEl = $("#reg-path");
+    if (s.last_error) {
+      errEl.textContent = s.last_error;
+      errEl.classList.remove("hidden");
+    } else {
+      errEl.textContent = "";
+      errEl.classList.add("hidden");
+    }
+    if (s.registration_path) {
+      pathEl.textContent = `API path: ${s.registration_path}`;
+      pathEl.classList.remove("hidden");
+    } else {
+      pathEl.textContent = "";
+      pathEl.classList.add("hidden");
+    }
+
     const lk = s.last_link || {};
     const kv = $("#link-kv");
     kv.innerHTML = "";
@@ -199,6 +216,8 @@ function settingsInit() {
     body.target_component = Number(body.target_component);
     body.mavlink_enabled = form.elements.mavlink_enabled.checked;
     body.mavlink_send_distance = form.elements.mavlink_send_distance.checked;
+    body.router_plaintext_login = form.elements.router_plaintext_login.checked;
+    body.router_try_wifiwave2 = form.elements.router_try_wifiwave2.checked;
 
     const lat = form.reference_latitude.value.trim();
     const lon = form.reference_longitude.value.trim();

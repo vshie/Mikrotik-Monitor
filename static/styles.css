@@ -132,6 +132,16 @@ main {
   color: var(--muted);
 }
 
+.warn {
+  color: var(--bad);
+  margin: 0.35rem 0;
+  line-height: 1.35;
+}
+
+.hidden {
+  display: none;
+}
+
 a {
   color: var(--accent);
 }

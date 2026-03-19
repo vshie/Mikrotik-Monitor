@@ -72,6 +72,7 @@ async def api_status():
         "last_mavlink_errors": st.last_mavlink_errors,
         "rows_logged": st.rows_logged,
         "mavlink_enabled": cfg.mavlink_enabled,
+        "registration_path": st.registration_path,
     }
 
 
