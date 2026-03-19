@@ -15,10 +15,10 @@ COPY static ./static
 EXPOSE 80
 
 ARG IMAGE_NAME=mikrotik-monitor
-ARG AUTHOR=Community
-ARG AUTHOR_EMAIL=dev@example.com
-ARG MAINTAINER=Community
-ARG MAINTAINER_EMAIL=dev@example.com
+ARG AUTHOR=Tony White
+ARG AUTHOR_EMAIL=tony@bluerobotics.com
+ARG MAINTAINER=Blue Robotics
+ARG MAINTAINER_EMAIL=tony@bluerobotics.com
 ARG REPO=github.com/example/mikrotik-monitor
 ARG OWNER=example
 
