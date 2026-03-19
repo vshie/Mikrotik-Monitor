@@ -73,6 +73,28 @@ Change **`docker`** / **`tag`** if you use another registry or image tag. **`ide
 
 Stored in **`/data/settings.json`** on the volume (**plaintext**). Restrict filesystem access accordingly.
 
+### Browser vs RouterOS login
+
+The **extension web UI** has no login by design (it only shows data from your boat). **MikroTik’s API** always requires a valid **RouterOS user and password** (set in the extension **Settings**). “Invalid user name or password” in the dashboard refers to **API `/login` to the radio**, not to the browser.
+
+### Test API from your laptop (same network as `192.168.2.4`)
+
+On a computer that can reach the radio (e.g. `ping 192.168.2.4`):
+
+```bash
+cd /path/to/this/repo
+python3 -m venv .venv && source .venv/bin/activate
+pip install routeros-api
+
+# Try challenge login first (RouterOS 6.43+ — matches extension default)
+python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin --password 'YOUR_ROUTER_PASSWORD'
+
+# Only if you know you need legacy mode:
+python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin --password 'YOUR_ROUTER_PASSWORD' --plaintext
+```
+
+When this script prints **Login OK** and shows **rows** for a registration path, use the **same username, password, and plaintext checkbox** in the extension Settings.
+
 ### Troubleshooting: ping works but no SNR / signal fields
 
 1. **API login (RouterOS 6.43+)** — Default is **challenge login** (`router_plaintext_login`: **off**). If login still fails, enable **Legacy plaintext API login** in Settings only for very old RouterOS.
