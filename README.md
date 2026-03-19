@@ -11,12 +11,56 @@ BlueBoat-oriented extension that:
 
 ## BlueOS install
 
-1. Enable **API** on the MikroTik (**IP → Services → api**), same subnet as the companion (e.g. `192.168.2.0/24`). This is typically enabled by default. 
-2. In **Extensions**, add the image (Docker Hub or manual), with a host bind:
+1. Enable **API** on the MikroTik (**IP → Services → api**), same subnet as the companion (e.g. `192.168.2.0/24`). This is typically enabled by default.
+2. Ensure the host data directory exists (settings + CSV persist here):
 
-   - Recommended: mount host **`/usr/blueos/extensions/mikrotik-monitor`** to container **`/data`** (matches `LABEL permissions` in the `Dockerfile`).
+   ```bash
+   sudo mkdir -p /usr/blueos/extensions/mikrotik-monitor
+   ```
 
-3. Open the extension from the BlueOS sidebar; set **Settings** (router IP, credentials, reference lat/lon, mavlink URLs).
+3. In **Extensions**, install from the Bazaar, **or** use **manual install** (paste JSON below). Do **not** leave `permissions` empty — use the value below so port **80**, **`host.docker.internal`**, the **`/data`** bind, and **`NET_RAW`** (ICMP) are applied.
+
+4. Open the extension from the BlueOS sidebar; set **Settings** (router IP, credentials, reference lat/lon, mavlink URLs).
+
+### Manual install (copy-paste)
+
+Use this single JSON object in the manual install UI. The **`permissions`** field is a **string** (escaped JSON) exactly as BlueOS expects when the form shows `"permissions": "{}"` by default — replace that empty object with the string below.
+
+```json
+{
+  "identifier": "mikrotik.monitor",
+  "name": "Mikrotik Monitor",
+  "docker": "vshie/blueos-mikrotik-monitor",
+  "tag": "main",
+  "permissions": "{\"ExposedPorts\":{\"80/tcp\":{}},\"HostConfig\":{\"ExtraHosts\":[\"host.docker.internal:host-gateway\"],\"PortBindings\":{\"80/tcp\":[{\"HostPort\":\"\"}]},\"Binds\":[\"/usr/blueos/extensions/mikrotik-monitor:/data\"],\"CapAdd\":[\"NET_RAW\"]}}"
+}
+```
+
+Equivalent **`permissions`** value, formatted for reading (must be **stringified** into `permissions` as above if the UI only accepts a string):
+
+```json
+{
+  "ExposedPorts": {
+    "80/tcp": {}
+  },
+  "HostConfig": {
+    "ExtraHosts": ["host.docker.internal:host-gateway"],
+    "PortBindings": {
+      "80/tcp": [
+        {
+          "HostPort": ""
+        }
+      ]
+    },
+    "Binds": [
+      "/usr/blueos/extensions/mikrotik-monitor:/data"
+    ],
+    "CapAdd": ["NET_RAW"]
+  }
+}
+```
+
+Change **`docker`** / **`tag`** if you use another registry or image tag. **`identifier`** should stay a stable id for the same extension across upgrades.
 
 ### mavlink2rest URLs
 
