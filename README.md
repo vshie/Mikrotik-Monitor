@@ -11,7 +11,7 @@ BlueBoat-oriented extension that:
 
 ## BlueOS install
 
-1. Enable **API** on the MikroTik (**IP → Services → api**), same subnet as the companion (e.g. `192.168.2.0/24`).
+1. Enable **API** on the MikroTik (**IP → Services → api**), same subnet as the companion (e.g. `192.168.2.0/24`). This is typically enabled by default. 
 2. In **Extensions**, add the image (Docker Hub or manual), with a host bind:
 
    - Recommended: mount host **`/usr/blueos/extensions/mikrotik-monitor`** to container **`/data`** (matches `LABEL permissions` in the `Dockerfile`).
@@ -36,6 +36,34 @@ docker compose up --build
 ```
 
 Browse **http://localhost:8080**. Logs and settings land in **`./data`**.
+
+## Cross-build for Raspberry Pi (local)
+
+BlueOS on Pi often needs **`linux/arm/v7`** (32-bit OS) or **`linux/arm64`** (64-bit Pi OS / Pi 4 default image). From a Mac or PC with Docker Buildx + QEMU (Docker Desktop enables this by default):
+
+**ARMv7 (32-bit, e.g. older Pi OS armhf):**
+
+```bash
+docker buildx build --platform linux/arm/v7 \
+  -t blueos-mikrotik-monitor:armv7 --load .
+```
+
+**ARM64 (Pi 4 with 64-bit OS — common):**
+
+```bash
+docker buildx build --platform linux/arm64 \
+  -t blueos-mikrotik-monitor:arm64 --load .
+```
+
+`--load` loads a **single** platform into the local Docker daemon. To build both without loading: use `--platform linux/arm/v7,linux/arm64` and `--push` to a registry, or `--output type=tar` per platform.
+
+Copy to the Pi (example):
+
+```bash
+docker save blueos-mikrotik-monitor:armv7 | ssh pi@blueos.local docker load
+```
+
+Dependencies use **plain `uvicorn`** (not `uvicorn[standard]`) so **armv7** does not need to compile `uvloop`/`httptools` inside the slim image.
 
 ## GitHub Actions
 

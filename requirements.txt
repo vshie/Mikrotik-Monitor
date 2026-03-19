@@ -1,5 +1,6 @@
 fastapi==0.115.6
-uvicorn[standard]==0.32.1
+# Plain uvicorn (no [standard]): uvloop/httptools often lack armv7 wheels and need gcc in slim images.
+uvicorn==0.32.1
 httpx==0.28.1
 routeros-api==0.17.0
 pydantic==2.10.3
