@@ -62,7 +62,7 @@ async function refreshStatus() {
 
     const g = s.last_gps;
     $("#gps-line").textContent = g
-      ? `${g.lat.toFixed(6)}, ${g.lon.toFixed(6)}` + (g.alt_m != null ? ` · ${g.alt_m.toFixed(1)} m` : "")
+      ? `${g.lat.toFixed(6)}, ${g.lon.toFixed(6)}`
       : "No GPS fix";
 
     const d = s.last_distance_m;

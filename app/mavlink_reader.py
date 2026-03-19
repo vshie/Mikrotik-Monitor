@@ -84,15 +84,11 @@ async def fetch_global_position(
             return None
         lat_i = msg.get("lat")
         lon_i = msg.get("lon")
-        alt_i = msg.get("alt")
         if lat_i is None or lon_i is None:
             return None
-        out: dict[str, float] = {
+        return {
             "lat": float(lat_i) / 1e7,
             "lon": float(lon_i) / 1e7,
         }
-        if alt_i is not None:
-            out["alt_m"] = float(alt_i) / 1e3
-        return out
     except Exception:
         return None

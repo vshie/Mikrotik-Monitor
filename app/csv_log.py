@@ -22,7 +22,6 @@ CSV_FIELDS = [
     "rx_rate_mbps",
     "boat_lat",
     "boat_lon",
-    "boat_alt_m",
     "ref_lat",
     "ref_lon",
     "distance_m",

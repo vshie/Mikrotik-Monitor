@@ -61,6 +61,6 @@ uvicorn app.main:app --reload --port 8000
 
 Run from the repository root so `app` and `static` resolve correctly.
 
-## Altitude note
+## Position note
 
-`GLOBAL_POSITION_INT.alt` is interpreted as **millimeters MSL → meters** (`/1000`). Latitude/longitude use **degrees × 1e7** → degrees (`/1e7`), consistent with pingSurvey for lat/lon.
+Position comes from **`GLOBAL_POSITION_INT`** via mavlink2rest; we use **latitude and longitude** only (`/1e7` to decimal degrees). Altitude from that message is **not** read, logged, or shown.
