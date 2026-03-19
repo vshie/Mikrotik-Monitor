@@ -156,6 +156,7 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 "rx_rate_mbps": link_summary.get("rx_rate_mbps") if link_summary else "",
                 "boat_lat": gps["lat"] if gps else "",
                 "boat_lon": gps["lon"] if gps else "",
+                "boat_alt_m": "",
                 "ref_lat": ref_lat if ref_lat is not None else "",
                 "ref_lon": ref_lon if ref_lon is not None else "",
                 "distance_m": dist if dist is not None else "",
