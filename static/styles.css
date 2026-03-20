@@ -94,9 +94,10 @@ body {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  align-items: start;
 }
 
 .card {
@@ -104,6 +105,15 @@ body {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1rem 1.1rem;
+}
+
+.cards > .card {
+  padding: 0.65rem 0.85rem;
+}
+
+.cards .metric {
+  margin: 0.15rem 0;
+  font-size: 1rem;
 }
 
 .card h2 {
@@ -124,6 +134,12 @@ body {
   color: var(--accent);
 }
 
+.cards .kv {
+  margin: 0.35rem 0 0;
+  gap: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+}
+
 .kv {
   margin: 0.5rem 0 0;
   display: grid;
@@ -140,9 +156,25 @@ body {
   margin: 0;
 }
 
-.card .footnote {
-  margin: 0.75rem 0 0;
-  line-height: 1.45;
+.notes-title {
+  margin: 0.65rem 0 0.35rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.notes {
+  line-height: 1.4;
+}
+
+.notes p {
+  margin: 0.45rem 0 0;
+}
+
+.notes p:first-child {
+  margin-top: 0;
 }
 
 .small {
@@ -180,15 +212,19 @@ a {
 
 .chart-wrap {
   width: 100%;
+  min-height: 400px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.75rem 0.5rem 0.5rem;
+  position: relative;
 }
 
 #chart {
   width: 100% !important;
-  max-height: 380px;
+  height: 100% !important;
+  min-height: 360px;
+  max-height: none;
 }
 
 .form-grid fieldset {

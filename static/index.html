@@ -36,28 +36,33 @@
             <p id="last-error" class="small warn hidden"></p>
             <p id="reg-path" class="small muted hidden"></p>
             <dl class="kv" id="link-kv"></dl>
-            <p class="small muted footnote">
-              <strong>TX / RX link rate</strong> is the <strong>negotiated wireless PHY rate</strong> RouterOS reports for this station (Mbps at the radio layer). It reflects what the link <em>can</em> support under current signal/MCS — <strong>not</strong> measured IP throughput or how fast data is moving over Wi‑Fi.
-            </p>
           </div>
           <div class="card">
             <h2>GPS &amp; geometry</h2>
             <p id="gps-line" class="metric">—</p>
             <p id="dist-line" class="metric accent">—</p>
             <p id="brng-line" class="metric accent">—</p>
-            <p class="small muted">Distance and bearing are from your <strong>reference point</strong> to the BlueBoat (WGS84, true north).</p>
           </div>
           <div class="card">
             <h2>MAVLink</h2>
             <p id="mav-errors" class="small muted">—</p>
             <p class="small"><a id="csv-dl" href="api/download/csv">Download CSV</a></p>
+            <h3 class="notes-title">Notes</h3>
+            <div class="small muted notes">
+              <p>
+                <strong>TX / RX link rate</strong> is the <strong>negotiated wireless PHY rate</strong> RouterOS reports for this station (Mbps at the radio layer). It reflects what the link <em>can</em> support under current signal/MCS — <strong>not</strong> measured IP throughput or how fast data is moving over Wi‑Fi.
+              </p>
+              <p>
+                Distance and bearing are from your <strong>reference point</strong> to the BlueBoat (WGS84, true north).
+              </p>
+            </div>
           </div>
         </div>
 
         <section class="chart-block" aria-labelledby="chart-heading">
           <h2 id="chart-heading" class="chart-title">Last 20 minutes</h2>
           <div class="chart-wrap">
-            <canvas id="chart" height="140"></canvas>
+            <canvas id="chart" height="360"></canvas>
           </div>
         </section>
       </section>
