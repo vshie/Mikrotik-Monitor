@@ -9,6 +9,19 @@ BlueBoat-oriented extension that:
 - Appends all of the above to **`/data/mikrotik_link.csv`** (persistent volume).
 - Sends **`NAMED_VALUE_FLOAT`** messages (`MTK_SNR`, `MTK_TXDB`, `MTK_RXDB`, optional `MTK_DISTM`) via **POST** to mavlink2rest so values appear in ArduPilot **.BIN** logs.
 
+### Locked target (BlueBoat / single radio)
+
+This extension is **shipped for one on-board profile** (validated on hardware):
+
+| Item | Default |
+|------|---------|
+| Radio | MikroTik **RouterOS 6.x**, classic **`/interface/wireless/registration-table`** |
+| IP | **`192.168.2.4`**, API port **8728** |
+| Credentials | User **`admin`**, **empty password** (WebFig default); API uses plaintext-style `/login` first, then challenge if needed |
+| wifiwave2 | **Disabled** (RouterOS 7+ path not used on this radio) |
+
+Change **Settings** for per-vehicle items: **reference coordinates**, **mavlink2rest** URLs, **poll interval**. Other router toggles remain for rare overrides only.
+
 ## BlueOS install
 
 1. Enable **API** on the MikroTik (**IP → Services → api**), same subnet as the companion (e.g. `192.168.2.0/24`). This is typically enabled by default.

@@ -14,14 +14,13 @@ def _data_dir() -> Path:
 
 
 class AppSettings(BaseModel):
+    """Defaults: BlueBoat MikroTik ROS 6.x client (admin / no password, classic wireless)."""
+
     router_ip: str = "192.168.2.4"
     router_api_port: int = 8728
     router_username: str = "admin"
-    # Factory default is often user "admin" with no password (empty string).
     router_password: str = ""
-    # RouterOS 6.43+ uses challenge login; plaintext is for older ROS only.
     router_plaintext_login: bool = False
-    # RouterOS 6.x has no wifiwave2; probing it spams "no such command" in diagnostics when wireless is empty.
     router_try_wifiwave2: bool = False
     poll_interval_s: float = Field(default=1.0, ge=0.2, le=60.0)
 

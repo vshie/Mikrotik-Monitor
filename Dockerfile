@@ -15,14 +15,15 @@ COPY static ./static
 EXPOSE 80
 
 ARG IMAGE_NAME=mikrotik-monitor
+ARG GITHUB_REPO=Mikrotik-Monitor
 ARG AUTHOR=Tony White
 ARG AUTHOR_EMAIL=tony@bluerobotics.com
 ARG MAINTAINER=Blue Robotics
 ARG MAINTAINER_EMAIL=tony@bluerobotics.com
-ARG REPO=github.com/example/mikrotik-monitor
-ARG OWNER=example
+ARG REPO=github.com/vshie/Mikrotik-Monitor
+ARG OWNER=vshie
 
-LABEL version="1.0.0"
+LABEL version="1.1.0"
 LABEL permissions='{\
   "ExposedPorts": {\
     "80/tcp": {}\
@@ -42,7 +43,7 @@ LABEL permissions='{\
 }'
 LABEL authors="[{\"name\": \"${AUTHOR}\", \"email\": \"${AUTHOR_EMAIL}\"}]"
 LABEL company="{\"about\": \"Mikrotik client link metrics, GPS distance, CSV, MAVLink NamedValueFloat\", \"name\": \"${MAINTAINER}\", \"email\": \"${MAINTAINER_EMAIL}\"}"
-LABEL readme="https://raw.githubusercontent.com/${OWNER}/${IMAGE_NAME}/main/README.md"
+LABEL readme="https://raw.githubusercontent.com/${OWNER}/${GITHUB_REPO}/main/README.md"
 LABEL type="device-integration"
 LABEL tags='["communication", "data-collection", "navigation"]'
 
