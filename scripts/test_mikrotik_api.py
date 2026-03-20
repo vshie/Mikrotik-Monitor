@@ -74,6 +74,11 @@ def main() -> int:
         action="store_true",
         help="Use API over TLS (often port 8729). Self-signed cert verification is disabled for this test.",
     )
+    p.add_argument(
+        "--probe-wifiwave2",
+        action="store_true",
+        help="Also query /interface/wifiwave2/registration-table even when classic wireless has rows.",
+    )
     args = p.parse_args()
 
     password = _resolve_password(args.password)
@@ -153,23 +158,49 @@ def main() -> int:
         )
         return 1
 
-    paths = [
-        "/interface/wireless/registration-table",
-        "/interface/wifiwave2/registration-table",
-    ]
-    for path in paths:
+    classic = "/interface/wireless/registration-table"
+    try:
+        rows = api.get_resource(classic).get()
+        print(f"{classic}")
+        print(f"  rows: {len(rows)}")
+        if rows:
+            keys = sorted(rows[0].keys())
+            print(
+                f"  first row keys ({len(keys)}): {', '.join(keys[:20])}{' ...' if len(keys) > 20 else ''}"
+            )
+    except Exception as e:
+        print(f"{classic}")
+        print(f"  ERROR: {e}")
+        rows = []
+
+    wave2 = "/interface/wifiwave2/registration-table"
+
+    def _probe_wave2() -> None:
         try:
-            rows = api.get_resource(path).get()
-            print(f"{path}")
-            print(f"  rows: {len(rows)}")
-            if rows:
-                keys = sorted(rows[0].keys())
+            w2 = api.get_resource(wave2).get()
+            print(f"\n{wave2}")
+            print(f"  rows: {len(w2)}")
+            if w2:
+                keys = sorted(w2[0].keys())
                 print(
                     f"  first row keys ({len(keys)}): {', '.join(keys[:20])}{' ...' if len(keys) > 20 else ''}"
                 )
         except Exception as e:
-            print(f"{path}")
-            print(f"  ERROR: {e}")
+            err = str(e).lower()
+            print(f"\n{wave2}")
+            if "no such command" in err:
+                print("  not available on this RouterOS (expected on v6 / classic wireless only).")
+            else:
+                print(f"  ERROR: {e}")
+
+    if rows and not args.probe_wifiwave2:
+        print(
+            f"\n{wave2}\n"
+            f"  skipped (classic wireless already has data; ROS 6.x usually has no wifiwave2). "
+            f"Pass --probe-wifiwave2 to query it anyway."
+        )
+    else:
+        _probe_wave2()
 
     try:
         pool.disconnect()

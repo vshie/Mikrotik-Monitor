@@ -135,7 +135,7 @@ Optional isolation: add a user **`api-test`** in group **`read`**, password **`t
 1. **API login (RouterOS 6.43+)** — Default is **challenge login** (`router_plaintext_login`: **off**). If login still fails, enable **Legacy plaintext API login** in Settings only for very old RouterOS.
 2. **User permissions** — User group must allow **API** login (see above), not only Winbox. Then **read** access is enough to query the registration table.
 3. **Empty registration table** — Metrics exist only when the radio is a **station associated to an AP**. If disconnected, the table is empty (dashboard explains this).
-4. **wifiwave2** — On some **RouterOS 7+** builds, link stats live under **`/interface/wifiwave2/registration-table`**; leave **Also try wifiwave2** enabled (default). On pure 6.x, the second path may error in logs; that is harmless.
+4. **wifiwave2** — Default is **off** (BlueBoat / RouterOS 6.x). Enable **Also try wifiwave2** only on **RouterOS 7+** where classic wireless is empty but wifiwave2 has the station.
 5. **Dashboard** — After updating, the UI shows **RouterOS / MAVLink diagnostic text** when data is missing; check container logs for the same.
 
 ## Local test (Docker Desktop)

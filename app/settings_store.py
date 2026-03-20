@@ -21,7 +21,8 @@ class AppSettings(BaseModel):
     router_password: str = ""
     # RouterOS 6.43+ uses challenge login; plaintext is for older ROS only.
     router_plaintext_login: bool = False
-    router_try_wifiwave2: bool = True
+    # RouterOS 6.x has no wifiwave2; probing it spams "no such command" in diagnostics when wireless is empty.
+    router_try_wifiwave2: bool = False
     poll_interval_s: float = Field(default=1.0, ge=0.2, le=60.0)
 
     mavlink_rest_read_base: str = "http://host.docker.internal/mavlink2rest/mavlink"
