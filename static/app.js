@@ -152,7 +152,8 @@ async function loadChart() {
     if (wrap && !wrap.querySelector(".chart-err")) {
       const p = document.createElement("p");
       p.className = "small muted chart-err";
-      p.textContent = "Chart library failed to load. Check that vendor/chart.umd.min.js is reachable.";
+      p.textContent =
+        "Chart library failed to load. Check that static/vendor/chart.umd.min.js is reachable (must be under the /static mount).";
       wrap.appendChild(p);
     }
     return;
