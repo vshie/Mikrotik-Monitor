@@ -78,8 +78,8 @@ async function refreshStatus() {
       ["TX (dBm)", fmtNum(lk.tx_dbm)],
       ["RX (dBm)", fmtNum(lk.rx_dbm)],
       ["Noise (dBm)", fmtNum(lk.noise_floor_dbm)],
-      ["TX rate", fmtMbps(lk.tx_rate_mbps)],
-      ["RX rate", fmtMbps(lk.rx_rate_mbps)],
+      ["TX link rate (PHY)", fmtMbps(lk.tx_rate_mbps)],
+      ["RX link rate (PHY)", fmtMbps(lk.rx_rate_mbps)],
       ["AP MAC", lk.ap_mac || "—"],
       ["Interface", lk.interface || "—"],
     ];

@@ -140,6 +140,11 @@ body {
   margin: 0;
 }
 
+.card .footnote {
+  margin: 0.75rem 0 0;
+  line-height: 1.45;
+}
+
 .small {
   font-size: 0.8rem;
 }
