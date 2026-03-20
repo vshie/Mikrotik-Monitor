@@ -204,9 +204,10 @@ function settingsInit() {
     const body = {};
     const data = new FormData(form);
     for (const [k, raw] of data.entries()) {
-      if (k === "router_password" && raw === "") continue;
       body[k] = raw;
     }
+    // Always persist password field (empty = no password, MikroTik factory default)
+    body.router_password = form.elements.router_password.value;
     body.router_api_port = Number(body.router_api_port);
     body.poll_interval_s = Number(body.poll_interval_s);
     body.gps_component_id = Number(body.gps_component_id);

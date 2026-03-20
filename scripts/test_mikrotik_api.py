@@ -7,12 +7,14 @@ Uses the same routeros-api + login modes as the BlueOS extension.
 
   pip install routeros-api
 
-  # Prefer env var so the real password is not in shell history:
-  export MIKROTIK_API_PASSWORD='your-real-router-password'
+  # Factory default is often admin with NO password — omit -p and env, or:
   python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin
 
-  # Or inline (replace with the actual password, not a placeholder):
-  python scripts/test_mikrotik_api.py --host 192.168.2.4 -u admin -p 'your-real-router-password'
+  # If you set a password in Winbox/WebFig:
+  export MIKROTIK_API_PASSWORD='your-secret'
+  python scripts/test_mikrotik_api.py --host 192.168.2.4 -u admin
+
+  python scripts/test_mikrotik_api.py --host 192.168.2.4 -u admin -p 'your-secret'
 
   python scripts/test_mikrotik_api.py ... --plaintext   # only for old ROS / special cases
   python scripts/test_mikrotik_api.py ... --ssl --port 8729   # if only api-ssl is enabled
@@ -35,10 +37,11 @@ _PLACEHOLDER_PASSWORDS = frozenset(
 )
 
 
-def _resolve_password(arg_password: str | None) -> str | None:
+def _resolve_password(arg_password: str | None) -> str:
+    """Empty string is valid (MikroTik factory default: admin, no password)."""
     if arg_password is not None:
         return arg_password
-    return os.environ.get("MIKROTIK_API_PASSWORD")
+    return os.environ.get("MIKROTIK_API_PASSWORD", "")
 
 
 def main() -> int:
@@ -65,12 +68,6 @@ def main() -> int:
     args = p.parse_args()
 
     password = _resolve_password(args.password)
-    if not password:
-        print(
-            "No password: pass -p '...' or export MIKROTIK_API_PASSWORD='...'",
-            file=sys.stderr,
-        )
-        return 1
 
     if password in _PLACEHOLDER_PASSWORDS:
         print(
@@ -90,9 +87,10 @@ def main() -> int:
         print("Install: pip install routeros-api", file=sys.stderr)
         return 1
 
+    pw_note = "empty password (factory-style)" if password == "" else f"password_len={len(password)}"
     print(
         f"Connecting {args.username}@{args.host}:{port} "
-        f"(ssl={args.ssl}, plaintext_login={args.plaintext}, password_len={len(password)})..."
+        f"(ssl={args.ssl}, plaintext_login={args.plaintext}, {pw_note})..."
     )
 
     pool = None
@@ -126,6 +124,7 @@ def main() -> int:
             "  • If admin/admin works in Winbox but NOT here: the user's GROUP must allow API login.\n"
             "    Winbox → System → Users → Groups → [admin's group] → enable API in policies.\n"
             "    CLI: /user group print detail  (policy should include the flag api)\n"
+            "  • If you never set a password: use empty password (omit -p; do not use -p admin).\n"
             "  • Otherwise: same password as Winbox/WebFig; avoid README placeholders in -p.\n"
             "  • IP → Services: 'api' enabled on 8728 (or try --ssl --port 8729 if only api-ssl is on).\n"
             "  • Try without --plaintext first (RouterOS 6.43+); add --plaintext only if you know you need it.\n",

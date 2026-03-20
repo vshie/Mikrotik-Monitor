@@ -17,7 +17,8 @@ class AppSettings(BaseModel):
     router_ip: str = "192.168.2.4"
     router_api_port: int = 8728
     router_username: str = "admin"
-    router_password: str = "admin"
+    # Factory default is often user "admin" with no password (empty string).
+    router_password: str = ""
     # RouterOS 6.43+ uses challenge login; plaintext is for older ROS only.
     router_plaintext_login: bool = False
     router_try_wifiwave2: bool = True

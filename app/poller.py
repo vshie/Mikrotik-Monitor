@@ -160,8 +160,8 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 if reg_detail:
                     status_parts.append(
                         f"RouterOS: no link data ({reg_detail}). "
-                        "Check API user/password, API service enabled, "
-                        "and try toggling legacy plaintext login in Settings if login fails."
+                        "Check API user/password (factory default is often admin with empty password), "
+                        "API service enabled, and legacy plaintext only if required."
                     )
                 else:
                     status_parts.append(

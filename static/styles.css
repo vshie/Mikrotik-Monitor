@@ -178,6 +178,13 @@ a {
   color: var(--muted);
 }
 
+.form-grid .hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.35;
+  max-width: 42rem;
+}
+
 .form-grid label.full {
   grid-column: 1 / -1;
 }

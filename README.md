@@ -75,7 +75,15 @@ Stored in **`/data/settings.json`** on the volume (**plaintext**). Restrict file
 
 ### Browser vs RouterOS login
 
-The **extension web UI** has no login by design (it only shows data from your boat). **MikroTik’s API** always requires a valid **RouterOS user and password** (set in the extension **Settings**). “Invalid user name or password” in the dashboard refers to **API `/login` to the radio**, not to the browser.
+The **extension web UI** has no login by design (it only shows data from your boat). **MikroTik’s API** authenticates with a RouterOS **username** and **password** (set in **Settings**). “Invalid user name or password” in the dashboard refers to **API `/login` to the radio**, not to the browser.
+
+### How API login works (RouterOS 6.43+)
+
+Official reference: [MikroTik API — protocol and login](https://help.mikrotik.com/docs/spaces/ROS/pages/47579160/API#API-Initiallogin).
+
+After 6.43, login is **not** “send username+password once in plain text” in the way older clients did. The documented flow is a **two-step** `/login`: the router returns a challenge (`=ret=…`), then the client sends `=name=` and `=response=` where **`=response=` is derived from the password** (including an **empty** password). The `routeros-api` library does this when **legacy plaintext** is **off** (extension default).
+
+Many devices still ship with user **`admin`** and **no password**. In that case the password string must be **empty** — using **`admin` as the password** will fail with error 6. In **Settings**, leave **Password** blank; in the test script, omit `-p` and do not set `MIKROTIK_API_PASSWORD` (or set it to an empty string).
 
 ### Test API from your laptop (same network as `192.168.2.4`)
 
