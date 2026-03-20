@@ -4,17 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mikrotik Link Monitor</title>
-  <!-- BlueOS serves this app under a prefix (e.g. /extensionv2/.../); base makes relative URLs work. -->
-  <script>
-    (function () {
-      var p = location.pathname;
-      var href = p.endsWith("/") ? p : p + "/";
-      var b = document.createElement("base");
-      b.href = href;
-      var after = document.querySelector("meta[charset]");
-      document.head.insertBefore(b, after && after.nextSibling ? after.nextSibling : document.head.firstChild);
-    })();
-  </script>
+  <!-- Sync: <base> from this script URL when location.pathname is "/" (BlueOS iframe). -->
+  <script src="static/init-base.js"></script>
   <link rel="stylesheet" href="static/styles.css" />
   <script src="vendor/chart.umd.min.js" defer></script>
   <script src="static/app.js" defer></script>

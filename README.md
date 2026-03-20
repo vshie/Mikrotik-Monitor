@@ -41,10 +41,17 @@ Change **Settings** for per-vehicle items: **reference coordinates**, **mavlink2
 
 ### Web UI under BlueOS (no broken CSS / 404 on `/static`)
 
-BlueOS often serves extensions under a **path prefix** (e.g. `/extensionv2/…/`). The browser must load **`static/styles.css`**, **`static/app.js`**, and **`api/…`** **relative to that prefix**. This app injects a **`<base href>`** from `location.pathname` and uses **relative** asset and API URLs so they resolve correctly. Using **leading slashes** (`/static/…`, `/api/…`) would request the **BlueOS host root** and typically **404**, which looks like “no CSS” and a blank chart.
+BlueOS often serves extensions under a **path prefix** (e.g. `/extensionv2/…/`). In some embed modes the iframe **`location.pathname` is still `/`**, so a `<base href>` derived only from `location` sends **`api/…`** to the main BlueOS app (`/api/settings` → BlueOS HTML shell → **404** and empty settings).
 
-- **Offline / no CDN:** **Chart.js** is vendored as **`static/vendor/chart.umd.min.js`**; the UI does not depend on the public internet to load.
-- **`theme_style.css` 404** in the console is usually **BlueOS** injecting a theme stylesheet into the extension iframe, not something shipped by this extension; it can be ignored unless your BlueOS build provides that file.
+This app uses:
+
+1. **`static/init-base.js`** — a **synchronous** first script that sets **`<base href>`** from **`document.currentScript.src`** (the real extension URL), so CSS, Chart, and `app.js` resolve before paint.
+2. **`app.js`** — builds **`APP_ROOT`** from the resolved **`static/app.js`** URL and calls **`fetch(apiUrl("api/status"))`** etc., so API requests always hit the extension container, not BlueOS port 80.
+
+Do not use root-absolute paths (`/api/…`, `/static/…`) in this UI.
+
+- **Offline / no CDN:** **Chart.js** is vendored as **`static/vendor/chart.umd.min.js`**.
+- **`theme_style.css` 404** in the console is usually **BlueOS** injecting a theme stylesheet into the extension iframe, not this extension.
 
 ### Manual install (copy-paste)
 

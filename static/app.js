@@ -1,5 +1,29 @@
 /* global Chart */
 
+/** API + fetch base: derived from where app.js was loaded (not location.pathname — BlueOS may use "/"). */
+function appRootUrl() {
+  const el = document.querySelector('script[src*="static/app.js"]');
+  if (el && el.src) {
+    try {
+      const u = new URL(el.src);
+      let path = u.pathname.replace(/\/static\/app\.js(\?.*)?$/i, "");
+      if (!path.endsWith("/")) path += "/";
+      return u.origin + path;
+    } catch (_) {
+      /* fall through */
+    }
+  }
+  const p = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
+  return `${location.origin}${p}`;
+}
+
+const APP_ROOT = appRootUrl();
+
+function apiUrl(path) {
+  const rel = path.startsWith("/") ? path.slice(1) : path;
+  return new URL(rel, APP_ROOT).href;
+}
+
 function $(sel) {
   return document.querySelector(sel);
 }
@@ -37,8 +61,8 @@ function fmtBearing(deg) {
   return `${d.toFixed(1)}° (${dirs[idx]}, toward boat)`;
 }
 
-async function fetchJSON(url, opts) {
-  const r = await fetch(url, opts);
+async function fetchJSON(path, opts) {
+  const r = await fetch(apiUrl(path), opts);
   if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
   return r.json();
 }
@@ -123,6 +147,16 @@ function parseTS(row) {
 }
 
 async function loadChart() {
+  if (typeof Chart === "undefined") {
+    const wrap = document.querySelector(".chart-wrap");
+    if (wrap && !wrap.querySelector(".chart-err")) {
+      const p = document.createElement("p");
+      p.className = "small muted chart-err";
+      p.textContent = "Chart library failed to load. Check that vendor/chart.umd.min.js is reachable.";
+      wrap.appendChild(p);
+    }
+    return;
+  }
   const { points } = await fetchJSON("api/history?minutes=20");
   const labels = [];
   const snr = [];
@@ -266,8 +300,14 @@ function settingsInit() {
   });
 }
 
+function wireCsvDownloadLink() {
+  const a = $("#csv-dl");
+  if (a) a.href = apiUrl("api/download/csv");
+}
+
 tabInit();
 settingsInit();
+wireCsvDownloadLink();
 loadSettingsForm();
 refreshStatus();
 loadChart();
