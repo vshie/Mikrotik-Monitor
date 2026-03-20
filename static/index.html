@@ -12,16 +12,6 @@
 </head>
 <body>
   <div class="page">
-    <header class="hero" role="banner">
-      <img
-        class="hero-img"
-        src="static/extension-hero.png"
-        width="1200"
-        height="630"
-        alt="Mikrotik Monitor — BlueBoat link metrics"
-      />
-    </header>
-
     <nav class="tabs" role="tablist">
       <button type="button" class="tab active" data-tab="dash">Dashboard</button>
       <button type="button" class="tab" data-tab="settings">Settings</button>
@@ -29,34 +19,46 @@
 
     <main class="main-inner">
       <section id="panel-dash" class="panel active">
-        <div class="cards">
-          <div class="card">
-            <h2>Radio</h2>
-            <p id="reach" class="metric">—</p>
-            <p id="last-error" class="small warn hidden"></p>
-            <p id="reg-path" class="small muted hidden"></p>
-            <dl class="kv" id="link-kv"></dl>
-          </div>
-          <div class="card">
-            <h2>GPS &amp; geometry</h2>
-            <p id="gps-line" class="metric">—</p>
-            <p id="dist-line" class="metric accent">—</p>
-            <p id="brng-line" class="metric accent">—</p>
-          </div>
-          <div class="card">
-            <h2>MAVLink</h2>
-            <p id="mav-errors" class="small muted">—</p>
-            <p class="small"><a id="csv-dl" href="api/download/csv">Download CSV</a></p>
-            <h3 class="notes-title">Notes</h3>
-            <div class="small muted notes">
-              <p>
-                <strong>TX / RX link rate</strong> is the <strong>negotiated wireless PHY rate</strong> RouterOS reports for this station (Mbps at the radio layer). It reflects what the link <em>can</em> support under current signal/MCS — <strong>not</strong> measured IP throughput or how fast data is moving over Wi‑Fi.
-              </p>
-              <p>
-                Distance and bearing are from your <strong>reference point</strong> to the BlueBoat (WGS84, true north).
-              </p>
+        <div class="hero-band" role="banner">
+          <div class="hero-band-inner">
+            <aside class="card card--dash-side">
+              <h2>Radio</h2>
+              <p id="reach" class="metric">—</p>
+              <p id="last-error" class="small warn hidden"></p>
+              <p id="reg-path" class="small muted hidden"></p>
+              <dl class="kv" id="link-kv"></dl>
+            </aside>
+            <div class="hero-center">
+              <img
+                class="hero-img"
+                src="static/extension-hero.png"
+                width="1200"
+                height="630"
+                alt="Mikrotik Monitor — BlueBoat link metrics"
+              />
             </div>
+            <aside class="card card--dash-side">
+              <h2>MAVLink</h2>
+              <p id="mav-errors" class="small muted">—</p>
+              <p class="small"><a id="csv-dl" href="api/download/csv">Download CSV</a></p>
+              <h3 class="notes-title">Notes</h3>
+              <div class="small muted notes">
+                <p>
+                  <strong>TX / RX link rate</strong> is the <strong>negotiated wireless PHY rate</strong> RouterOS reports for this station (Mbps at the radio layer). It reflects what the link <em>can</em> support under current signal/MCS — <strong>not</strong> measured IP throughput or how fast data is moving over Wi‑Fi.
+                </p>
+                <p>
+                  Distance and bearing are from your <strong>reference point</strong> to the BlueBoat (WGS84, true north).
+                </p>
+              </div>
+            </aside>
           </div>
+        </div>
+
+        <div class="card card--range">
+          <h2>Range and Bearing</h2>
+          <p id="gps-line" class="metric">—</p>
+          <p id="dist-line" class="metric accent">—</p>
+          <p id="brng-line" class="metric accent">—</p>
         </div>
 
         <section class="chart-block" aria-labelledby="chart-heading">

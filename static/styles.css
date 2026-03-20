@@ -29,21 +29,83 @@ body {
   background: var(--bg);
 }
 
-.hero {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  line-height: 0;
+/* Dashboard: Radio | hero art | MAVLink */
+.hero-band {
+  margin: 0 0 0.75rem;
 }
 
-.hero-img {
-  display: block;
+.hero-band-inner {
+  display: grid;
+  grid-template-columns: minmax(168px, 1fr) minmax(200px, 1.45fr) minmax(168px, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.hero-center {
+  min-width: 0;
+  line-height: 0;
+  text-align: center;
+  background: var(--bg);
+}
+
+.hero-center .hero-img {
+  display: inline-block;
   width: 100%;
+  max-width: 100%;
   height: auto;
-  max-height: min(42vh, 420px);
+  max-height: min(34vh, 320px);
   object-fit: contain;
-  object-position: center top;
+  object-position: center center;
+  vertical-align: middle;
+}
+
+.card--dash-side {
+  padding: 0.6rem 0.7rem;
+  max-height: min(40vh, 420px);
+  overflow-y: auto;
+}
+
+.card--dash-side .metric {
+  margin: 0.12rem 0;
+  font-size: 0.98rem;
+}
+
+.card--dash-side .kv {
+  margin: 0.3rem 0 0;
+  gap: 0.18rem 0.45rem;
+  font-size: 0.76rem;
+}
+
+.card--dash-side .notes {
+  font-size: 0.72rem;
+}
+
+.card--dash-side .notes-title {
+  margin-top: 0.5rem;
+}
+
+.card--range {
+  margin: 0 auto 0.75rem;
+  padding: 0.7rem 0.95rem;
+  max-width: 36rem;
+}
+
+@media (max-width: 780px) {
+  .hero-band-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-center {
+    order: -1;
+  }
+
+  .card--dash-side {
+    max-height: none;
+  }
+
+  .card--range {
+    max-width: none;
+  }
 }
 
 .tabs {
@@ -92,28 +154,11 @@ body {
   display: block;
 }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  align-items: start;
-}
-
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1rem 1.1rem;
-}
-
-.cards > .card {
-  padding: 0.65rem 0.85rem;
-}
-
-.cards .metric {
-  margin: 0.15rem 0;
-  font-size: 1rem;
 }
 
 .card h2 {
@@ -132,12 +177,6 @@ body {
 
 .metric.accent {
   color: var(--accent);
-}
-
-.cards .kv {
-  margin: 0.35rem 0 0;
-  gap: 0.2rem 0.6rem;
-  font-size: 0.8rem;
 }
 
 .kv {
@@ -200,7 +239,7 @@ a {
 }
 
 .chart-block {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .chart-title {
