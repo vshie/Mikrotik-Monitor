@@ -21,6 +21,43 @@ def _parse_numeric(value: Any) -> float | None:
         return None
 
 
+def _norm_entry_keys(entry: dict[str, Any]) -> dict[str, Any]:
+    """RouterOS keys are usually hyphenated; some stacks use underscores."""
+    return {str(k).lower().replace("_", "-"): v for k, v in entry.items()}
+
+
+def _pick(entry: dict[str, Any], *keys: str) -> Any:
+    for k in keys:
+        v = entry.get(k)
+        if v not in (None, ""):
+            return v
+    return None
+
+
+def _parse_rate_mbps(value: Any) -> float | None:
+    """Parse tx-rate / rx-rate; take max Mbps from strings like '1Mbps / 130Mbps' (first float alone would stick at 1)."""
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s or s.upper() == "N/A":
+        return None
+    parts = re.findall(r"([\d.]+)\s*(?:[Mm][Bb]ps?|[Mm]bps)", s)
+    if parts:
+        try:
+            return max(float(p) for p in parts)
+        except ValueError:
+            pass
+    n = _parse_numeric(s)
+    if n is None:
+        return None
+    # Bare number: likely kbps from API (e.g. 72200) when in this band
+    if n >= 5000 and n < 1_000_000 and "mbps" not in s.lower():
+        return n / 1000.0
+    if n >= 1_000_000:
+        return n / 1_000_000.0
+    return n
+
+
 def _login_plaintext_modes(user_wants_plaintext: bool, password: str) -> list[bool]:
     """Order of plaintext_login flag to try with routeros-api.
 
@@ -118,22 +155,42 @@ def fetch_registration_table(
 def summarize_link(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
     if not entries:
         return None
-    e = entries[0]
-    # wifiwave2 may use slightly different keys
-    snr = e.get("signal-to-noise") or e.get("snr")
-    sig = e.get("signal-strength") or e.get("signal")
-    tx = e.get("tx-signal-strength") or e.get("tx-signal")
-    rx = e.get("rx-signal-strength") or e.get("rx-signal")
+    e = _norm_entry_keys(entries[0])
+    snr = _pick(e, "signal-to-noise", "snr")
+    sig = _pick(e, "signal-strength", "signal")
+    tx = _pick(e, "tx-signal-strength", "tx-signal")
+    rx = _pick(
+        e,
+        "rx-signal-strength",
+        "rx-signal",
+        "signal-strength-rx",
+        "signal-strength-ch0",
+        "signal-strength-ch1",
+    )
+    # Many STA radios omit a separate RX dBm; fall back to overall signal-strength (same RSSI).
+    if rx is None:
+        rx = sig
+    noise = _pick(
+        e,
+        "noise-floor",
+        "noise-floor-ch0",
+        "noise-floor-ch1",
+        "current-noise-floor",
+        "nf",
+        "noise",
+    )
+    tx_rate = _pick(e, "tx-rate", "last-tx-rate")
+    rx_rate = _pick(e, "rx-rate", "last-rx-rate")
     return {
-        "ap_mac": e.get("mac-address"),
-        "interface": e.get("interface"),
+        "ap_mac": _pick(e, "mac-address"),
+        "interface": _pick(e, "interface"),
         "snr_db": _parse_numeric(snr),
         "signal_dbm": _parse_numeric(sig),
         "tx_dbm": _parse_numeric(tx),
         "rx_dbm": _parse_numeric(rx),
-        "noise_floor_dbm": _parse_numeric(e.get("noise-floor")),
-        "tx_rate_mbps": _parse_numeric(e.get("tx-rate")),
-        "rx_rate_mbps": _parse_numeric(e.get("rx-rate")),
-        "ccq_percent": _parse_numeric(e.get("ccq")),
-        "uptime": e.get("uptime"),
+        "noise_floor_dbm": _parse_numeric(noise),
+        "tx_rate_mbps": _parse_rate_mbps(tx_rate),
+        "rx_rate_mbps": _parse_rate_mbps(rx_rate),
+        "ccq_percent": _parse_numeric(_pick(e, "ccq", "tx-ccq", "rx-ccq")),
+        "uptime": _pick(e, "uptime"),
     }

@@ -212,19 +212,16 @@ a {
 
 .chart-wrap {
   width: 100%;
-  min-height: 400px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.75rem 0.5rem 0.5rem;
-  position: relative;
 }
 
+/* ~20% taller than original 380px cap */
 #chart {
   width: 100% !important;
-  height: 100% !important;
-  min-height: 360px;
-  max-height: none;
+  max-height: 456px;
 }
 
 .form-grid fieldset {
