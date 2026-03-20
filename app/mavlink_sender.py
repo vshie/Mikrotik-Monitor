@@ -6,10 +6,11 @@ import httpx
 
 
 def _nvf_name_field(name: str) -> list[str]:
-    """mavlink2rest (rust-mavlink JSON) expects `name` as 10 single-char strings, null-padded — not a JSON string."""
-    ascii_only = name.encode("ascii", errors="ignore").decode("ascii")[:10]
-    padded = ascii_only.ljust(10, "\x00")
-    return list(padded)
+    """10 single-char strings, null-padded (same shape as mavlink2rest / PME_microDOT)."""
+    out: list[str] = []
+    for i in range(10):
+        out.append(name[i] if i < len(name) else "\x00")
+    return out
 
 
 def _nvf_payload(
@@ -27,8 +28,8 @@ def _nvf_payload(
         "message": {
             "type": "NAMED_VALUE_FLOAT",
             "time_boot_ms": 0,
-            "name": _nvf_name_field(name),
             "value": float(value),
+            "name": _nvf_name_field(name),
         },
     }
 

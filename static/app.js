@@ -23,6 +23,12 @@ function fmtNum(v) {
   return Number.isFinite(n) ? n.toFixed(2) : String(v);
 }
 
+function fmtMbps(v) {
+  if (v === "" || v === null || v === undefined) return "—";
+  const n = Number(v);
+  return Number.isFinite(n) ? `${n.toFixed(2)} Mbps` : "—";
+}
+
 function fmtBearing(deg) {
   if (deg == null || !Number.isFinite(deg)) return "—";
   const d = ((deg % 360) + 360) % 360;
@@ -72,8 +78,8 @@ async function refreshStatus() {
       ["TX (dBm)", fmtNum(lk.tx_dbm)],
       ["RX (dBm)", fmtNum(lk.rx_dbm)],
       ["Noise (dBm)", fmtNum(lk.noise_floor_dbm)],
-      ["TX rate", fmtNum(lk.tx_rate_mbps)],
-      ["RX rate", fmtNum(lk.rx_rate_mbps)],
+      ["TX rate", fmtMbps(lk.tx_rate_mbps)],
+      ["RX rate", fmtMbps(lk.rx_rate_mbps)],
       ["AP MAC", lk.ap_mac || "—"],
       ["Interface", lk.interface || "—"],
     ];

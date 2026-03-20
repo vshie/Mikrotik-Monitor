@@ -31,7 +31,7 @@ class AppSettings(BaseModel):
     target_system: int = 1
     target_component: int = 1
     mavlink_header_system_id: int = 255
-    mavlink_header_component_id: int = 240
+    mavlink_header_component_id: int = 0
 
     reference_latitude: float | None = None
     reference_longitude: float | None = None
