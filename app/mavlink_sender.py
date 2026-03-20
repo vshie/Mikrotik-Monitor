@@ -5,14 +5,19 @@ from typing import Any
 import httpx
 
 
+def _nvf_name_field(name: str) -> list[str]:
+    """mavlink2rest (rust-mavlink JSON) expects `name` as 10 single-char strings, null-padded — not a JSON string."""
+    ascii_only = name.encode("ascii", errors="ignore").decode("ascii")[:10]
+    padded = ascii_only.ljust(10, "\x00")
+    return list(padded)
+
+
 def _nvf_payload(
     name: str,
     value: float,
     header_system_id: int,
     header_component_id: int,
 ) -> dict[str, Any]:
-    # NAMED_VALUE_FLOAT has no target fields in MAVLink common
-    n = name[:10]
     return {
         "header": {
             "system_id": header_system_id,
@@ -22,7 +27,7 @@ def _nvf_payload(
         "message": {
             "type": "NAMED_VALUE_FLOAT",
             "time_boot_ms": 0,
-            "name": n,
+            "name": _nvf_name_field(name),
             "value": float(value),
         },
     }

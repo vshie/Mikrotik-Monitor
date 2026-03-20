@@ -83,8 +83,9 @@ Change **`docker`** / **`tag`** if you use another registry or image tag. **`ide
 
 - **GET (GPS)**: default `http://host.docker.internal/mavlink2rest/mavlink` — used like pingSurvey for  
   `.../vehicles/{id}/components/1/messages/GLOBAL_POSITION_INT`.
-- **POST (NamedValueFloat)**: default `http://host.docker.internal:6040/v1/mavlink` — **adjust if your BlueOS build exposes a different port/path**. On the vehicle, confirm with:  
+- **POST (NamedValueFloat)**: default `http://host.docker.internal:6040/v1/mavlink` — **adjust if your BlueOS build exposes a different port/path** (some setups use the same reverse proxy as GET, e.g. `http://host.docker.internal/mavlink2rest/v1/mavlink`). On the vehicle, confirm the helper schema with:  
   `GET http://<host>:<port>/v1/helper/mavlink?name=NAMED_VALUE_FLOAT`.
+- **Payload shape**: mavlink2rest (rust-mavlink) expects `NAMED_VALUE_FLOAT.name` as **an array of 10 single-character JSON strings**, null-padded — not a plain string. If you see `HTTP 404 Failed to parse message, not a valid MAVLinkMessage`, the usual cause is the wrong `name` encoding; this extension formats that correctly. See [mavlink2rest#52](https://github.com/mavlink/mavlink2rest/issues/52).
 
 ### RouterOS credentials
 
