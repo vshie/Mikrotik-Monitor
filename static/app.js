@@ -172,6 +172,50 @@ async function refreshStatus() {
 }
 
 let chart;
+let linkThresholdPluginRegistered = false;
+
+/** Shaded threshold bands: SNR ≤ 20 dB (teal), signal &lt; -80 dBm (green). Requires separate left scales. */
+function ensureLinkThresholdPlugin() {
+  if (linkThresholdPluginRegistered || typeof Chart === "undefined") return;
+  linkThresholdPluginRegistered = true;
+
+  function bandRect(scale, area, vA, vB) {
+    if (!scale || !area) return { top: 0, height: 0 };
+    const p1 = scale.getPixelForValue(vA);
+    const p2 = scale.getPixelForValue(vB);
+    let t = Math.min(p1, p2);
+    let b = Math.max(p1, p2);
+    t = Math.max(area.top, t);
+    b = Math.min(area.bottom, b);
+    return { top: t, height: Math.max(0, b - t) };
+  }
+
+  Chart.register({
+    id: "linkThresholdBands",
+    beforeDatasetsDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      const snrScale = chart.scales.y;
+      const sigScale = chart.scales.ySig;
+      ctx.save();
+      if (snrScale && Number.isFinite(snrScale.min) && snrScale.min <= 20) {
+        const r = bandRect(snrScale, chartArea, 20, snrScale.min);
+        if (r.height > 0) {
+          ctx.fillStyle = "rgba(26, 122, 140, 0.2)";
+          ctx.fillRect(chartArea.left, r.top, chartArea.width, r.height);
+        }
+      }
+      if (sigScale && Number.isFinite(sigScale.min) && sigScale.min < -80) {
+        const r = bandRect(sigScale, chartArea, -80, sigScale.min);
+        if (r.height > 0) {
+          ctx.fillStyle = "rgba(26, 140, 90, 0.2)";
+          ctx.fillRect(chartArea.left, r.top, chartArea.width, r.height);
+        }
+      }
+      ctx.restore();
+    },
+  });
+}
 
 function parseTS(row) {
   const t = row.timestamp_utc;
@@ -192,6 +236,7 @@ async function loadChart() {
     }
     return;
   }
+  ensureLinkThresholdPlugin();
   const { points } = await fetchJSON("api/history?minutes=20");
   const labels = [];
   const snr = [];
@@ -223,12 +268,12 @@ async function loadChart() {
         borderColor: "#1a8c5a",
         tension: 0.2,
         spanGaps: true,
-        yAxisID: "y",
+        yAxisID: "ySig",
       },
       {
         label: "Distance (m)",
         data: dist,
-        borderColor: "#b8860b",
+        borderColor: "#c42d2d",
         tension: 0.2,
         spanGaps: true,
         yAxisID: "y1",
@@ -252,12 +297,21 @@ async function loadChart() {
         y: {
           position: "left",
           grid: { color: "#e2e8ee" },
-          ticks: { color: "#5c6b7a" },
+          ticks: { color: "#1a7a8c" },
+          title: { display: true, text: "SNR (dB)", color: "#5c6b7a", font: { size: 10 } },
+        },
+        ySig: {
+          position: "left",
+          offset: true,
+          grid: { drawOnChartArea: false },
+          ticks: { color: "#1a8c5a" },
+          title: { display: true, text: "Signal (dBm)", color: "#5c6b7a", font: { size: 10 } },
         },
         y1: {
           position: "right",
           grid: { drawOnChartArea: false },
-          ticks: { color: "#8a7030" },
+          ticks: { color: "#c42d2d" },
+          title: { display: true, text: "Distance (m)", color: "#5c6b7a", font: { size: 10 } },
         },
       },
       plugins: {
