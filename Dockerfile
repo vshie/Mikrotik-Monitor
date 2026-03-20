@@ -23,7 +23,7 @@ ARG MAINTAINER_EMAIL=tony@bluerobotics.com
 ARG REPO=github.com/vshie/Mikrotik-Monitor
 ARG OWNER=vshie
 
-LABEL version="1.1.0"
+LABEL version="1.2.0"
 LABEL permissions='{\
   "ExposedPorts": {\
     "80/tcp": {}\

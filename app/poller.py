@@ -11,7 +11,7 @@ from typing import Any
 import httpx
 
 from app.csv_log import append_row
-from app.geo import haversine_m
+from app.geo import haversine_m, initial_bearing_deg
 from app.mavlink_reader import detect_vehicle_system_id, fetch_global_position
 from app.mavlink_sender import send_named_value_floats
 from app.mikrotik_client import fetch_registration_table, summarize_link
@@ -29,6 +29,7 @@ class PollerState:
     last_link: dict[str, Any] | None = None
     last_gps: dict[str, float] | None = None
     last_distance_m: float | None = None
+    last_bearing_deg: float | None = None
     vehicle_system_id: int = 1
     last_mavlink_errors: list[str] = field(default_factory=list)
     rows_logged: int = 0
@@ -57,6 +58,7 @@ def get_state() -> PollerState:
             last_link=dict(STATE.last_link) if STATE.last_link else None,
             last_gps=dict(STATE.last_gps) if STATE.last_gps else None,
             last_distance_m=STATE.last_distance_m,
+            last_bearing_deg=STATE.last_bearing_deg,
             vehicle_system_id=STATE.vehicle_system_id,
             last_mavlink_errors=list(STATE.last_mavlink_errors),
             rows_logged=STATE.rows_logged,
@@ -141,6 +143,7 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 log.warning("MAVLink GPS read failed: %s", e, exc_info=True)
 
             dist: float | None = None
+            brng: float | None = None
             ref_lat = s.reference_latitude
             ref_lon = s.reference_longitude
             if (
@@ -151,9 +154,12 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 and -180 <= ref_lon <= 180
             ):
                 try:
-                    dist = haversine_m(gps["lat"], gps["lon"], ref_lat, ref_lon)
+                    bl, gl = gps["lat"], gps["lon"]
+                    dist = haversine_m(bl, gl, ref_lat, ref_lon)
+                    brng = initial_bearing_deg(ref_lat, ref_lon, bl, gl)
                 except Exception:
                     dist = None
+                    brng = None
 
             status_parts: list[str] = []
             if not entries:
@@ -176,6 +182,7 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 last_link=link_summary,
                 last_gps=gps,
                 last_distance_m=dist,
+                last_bearing_deg=brng,
                 last_mavlink_errors=[],
                 last_error=combined_error,
                 registration_path=reg_path,
@@ -197,6 +204,7 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 "ref_lat": ref_lat if ref_lat is not None else "",
                 "ref_lon": ref_lon if ref_lon is not None else "",
                 "distance_m": dist if dist is not None else "",
+                "bearing_deg": brng if brng is not None else "",
                 "ap_mac": (link_summary or {}).get("ap_mac") or "",
                 "wlan_iface": (link_summary or {}).get("interface") or "",
             }
@@ -218,6 +226,8 @@ async def poller_loop(stop: asyncio.Event) -> None:
                     nvf["MTK_RXDB"] = float(link_summary["rx_dbm"])
                 if s.mavlink_send_distance and dist is not None:
                     nvf["MTK_DISTM"] = float(dist)
+                if s.mavlink_send_distance and brng is not None:
+                    nvf["MTK_BRNG"] = float(brng)
                 if nvf:
                     try:
                         errs = await send_named_value_floats(

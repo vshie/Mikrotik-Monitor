@@ -26,6 +26,7 @@ CSV_FIELDS = [
     "ref_lat",
     "ref_lon",
     "distance_m",
+    "bearing_deg",
     "ap_mac",
     "wlan_iface",
 ]

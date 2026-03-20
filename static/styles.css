@@ -1,13 +1,14 @@
 :root {
-  --bg: #0f1419;
-  --surface: #1a222c;
-  --text: #e8eef4;
-  --muted: #8b9bab;
-  --accent: #3d9cf5;
-  --good: #3dd68c;
-  --bad: #f07178;
-  --border: #2a3542;
-  font-family: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+  --bg: #ffffff;
+  --surface: #f6f8fa;
+  --text: #1a2332;
+  --muted: #5c6b7a;
+  --accent: #1a7a8c;
+  --accent-soft: #e8f4f6;
+  --good: #1a8c5a;
+  --bad: #c42d2d;
+  --border: #d8dee4;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
 * {
@@ -17,41 +18,51 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(1200px 600px at 10% 0%, #15202b 0%, var(--bg) 55%);
+  background: var(--bg);
   color: var(--text);
 }
 
-.top {
-  padding: 1.25rem 1.5rem 0.5rem;
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
 }
 
-.top h1 {
+.hero {
+  width: 100%;
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  padding: 0;
+  background: var(--bg);
+  line-height: 0;
 }
 
-.sub {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
-  font-size: 0.85rem;
+.hero-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(42vh, 420px);
+  object-fit: contain;
+  object-position: center top;
 }
 
 .tabs {
   display: flex;
   gap: 0.25rem;
-  padding: 0 1rem;
+  justify-content: center;
+  padding: 0.75rem 1rem 0;
   border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .tab {
   background: transparent;
   border: none;
   color: var(--muted);
-  padding: 0.65rem 1rem;
+  padding: 0.65rem 1.25rem;
   cursor: pointer;
   font: inherit;
+  font-size: 0.95rem;
   border-bottom: 2px solid transparent;
 }
 
@@ -62,11 +73,15 @@ body {
 .tab.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
+  font-weight: 600;
 }
 
-main {
-  padding: 1rem 1.25rem 2rem;
+.main-inner {
+  flex: 1;
+  width: 100%;
   max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2.5rem;
 }
 
 .panel {
@@ -81,6 +96,7 @@ main {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .card {
@@ -92,7 +108,7 @@ main {
 
 .card h2 {
   margin: 0 0 0.5rem;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -146,13 +162,28 @@ a {
   color: var(--accent);
 }
 
-#chart {
-  width: 100% !important;
-  max-height: 360px;
+.chart-block {
+  margin-top: 0.5rem;
+}
+
+.chart-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.chart-wrap {
+  width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 0.5rem;
+  padding: 0.75rem 0.5rem 0.5rem;
+}
+
+#chart {
+  width: 100% !important;
+  max-height: 380px;
 }
 
 .form-grid fieldset {
@@ -215,7 +246,7 @@ a {
 
 button.primary {
   background: var(--accent);
-  color: #061018;
+  color: #fff;
   border: none;
   border-radius: 8px;
   padding: 0.55rem 1.1rem;
@@ -225,5 +256,5 @@ button.primary {
 }
 
 button.primary:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
 }

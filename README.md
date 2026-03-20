@@ -5,9 +5,13 @@ BlueBoat-oriented extension that:
 - Probes reachability of the onboard **MikroTik RouterOS v6** client (default `192.168.2.4`, API **8728**).
 - Polls **`/interface/wireless/registration-table`** for SNR and signal metrics.
 - Reads **GPS** from BlueOS **mavlink2rest** (same URL pattern as [pingSurvey](https://github.com/vshie/pingSurvey)).
-- Computes **great-circle distance** from the boat to **user-entered reference coordinates** (decimal degrees).
-- Appends all of the above to **`/data/mikrotik_link.csv`** (persistent volume).
-- Sends **`NAMED_VALUE_FLOAT`** messages (`MTK_SNR`, `MTK_TXDB`, `MTK_RXDB`, optional `MTK_DISTM`) via **POST** to mavlink2rest so values appear in ArduPilot **.BIN** logs.
+- Computes **great-circle distance** and **true compass bearing** from your **reference point** to the **BlueBoat** (WGS84; bearing is clockwise from north, 0–360°).
+- Appends all of the above to **`/data/mikrotik_link.csv`** (persistent volume), including column **`bearing_deg`** when a fix and reference are available.
+- Sends **`NAMED_VALUE_FLOAT`** messages (`MTK_SNR`, `MTK_TXDB`, `MTK_RXDB`, and when enabled `MTK_DISTM` + **`MTK_BRNG`**) via **POST** to mavlink2rest so values appear in ArduPilot **.BIN** logs.
+
+### Bazaar store icon
+
+To list this extension in the BlueOS Extensions store, open a PR against [**BlueOS-Extensions-Repository**](https://github.com/bluerobotics/BlueOS-Extensions-Repository) with **`metadata.json`** plus an icon file, as described under [Submission to the Bazaar](https://blueos.cloud/docs/latest/development/extensions/#submission-to-the-bazaar). Use the packaged artwork: **`static/extension-icon.png`** (same graphic as the in-app header).
 
 ### Locked target (BlueBoat / single radio)
 

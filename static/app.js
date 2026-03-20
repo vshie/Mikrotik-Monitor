@@ -12,7 +12,7 @@ function tabInit() {
       document.querySelectorAll(".panel").forEach((p) => {
         p.classList.toggle("active", p.id === `panel-${id}`);
       });
-      if (id === "chart") loadChart();
+      if (id === "dash") loadChart();
     });
   });
 }
@@ -21,6 +21,14 @@ function fmtNum(v) {
   if (v === "" || v === null || v === undefined) return "—";
   const n = Number(v);
   return Number.isFinite(n) ? n.toFixed(2) : String(v);
+}
+
+function fmtBearing(deg) {
+  if (deg == null || !Number.isFinite(deg)) return "—";
+  const d = ((deg % 360) + 360) % 360;
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const idx = Math.round(d / 45) % 8;
+  return `${d.toFixed(1)}° (${dirs[idx]}, toward boat)`;
 }
 
 async function fetchJSON(url, opts) {
@@ -84,7 +92,11 @@ async function refreshStatus() {
 
     const d = s.last_distance_m;
     $("#dist-line").textContent =
-      d != null && Number.isFinite(d) ? `${d.toFixed(1)} m to reference` : "Distance —";
+      d != null && Number.isFinite(d) ? `${d.toFixed(1)} m from reference to boat` : "Distance —";
+
+    const b = s.last_bearing_deg;
+    $("#brng-line").textContent =
+      b != null && Number.isFinite(b) ? fmtBearing(b) : "Bearing —";
 
     const errs = s.last_mavlink_errors || [];
     $("#mav-errors").textContent =
@@ -125,7 +137,7 @@ async function loadChart() {
       {
         label: "SNR (dB)",
         data: snr,
-        borderColor: "#3d9cf5",
+        borderColor: "#1a7a8c",
         tension: 0.2,
         spanGaps: true,
         yAxisID: "y",
@@ -133,7 +145,7 @@ async function loadChart() {
       {
         label: "Signal (dBm)",
         data: sig,
-        borderColor: "#3dd68c",
+        borderColor: "#1a8c5a",
         tension: 0.2,
         spanGaps: true,
         yAxisID: "y",
@@ -141,7 +153,7 @@ async function loadChart() {
       {
         label: "Distance (m)",
         data: dist,
-        borderColor: "#e0b15a",
+        borderColor: "#b8860b",
         tension: 0.2,
         spanGaps: true,
         yAxisID: "y1",
@@ -159,22 +171,22 @@ async function loadChart() {
       interaction: { mode: "index", intersect: false },
       scales: {
         x: {
-          grid: { color: "#2a3542" },
-          ticks: { color: "#8b9bab", maxRotation: 45, autoSkip: true, maxTicksLimit: 12 },
+          grid: { color: "#e2e8ee" },
+          ticks: { color: "#5c6b7a", maxRotation: 45, autoSkip: true, maxTicksLimit: 12 },
         },
         y: {
           position: "left",
-          grid: { color: "#2a3542" },
-          ticks: { color: "#8b9bab" },
+          grid: { color: "#e2e8ee" },
+          ticks: { color: "#5c6b7a" },
         },
         y1: {
           position: "right",
           grid: { drawOnChartArea: false },
-          ticks: { color: "#e0b15a" },
+          ticks: { color: "#8a7030" },
         },
       },
       plugins: {
-        legend: { labels: { color: "#e8eef4" } },
+        legend: { labels: { color: "#1a2332" } },
       },
     },
   });
@@ -206,7 +218,6 @@ function settingsInit() {
     for (const [k, raw] of data.entries()) {
       body[k] = raw;
     }
-    // Always persist password field (empty = no password, MikroTik factory default)
     body.router_password = form.elements.router_password.value;
     body.router_api_port = Number(body.router_api_port);
     body.poll_interval_s = Number(body.poll_interval_s);
@@ -253,4 +264,9 @@ tabInit();
 settingsInit();
 loadSettingsForm();
 refreshStatus();
+loadChart();
 setInterval(refreshStatus, 2000);
+setInterval(() => {
+  const dash = $("#panel-dash");
+  if (dash && dash.classList.contains("active")) loadChart();
+}, 20000);

@@ -47,12 +47,13 @@ async def root():
 async def register_service():
     payload = {
         "name": "Mikrotik Link Monitor",
-        "description": "RouterOS wireless link metrics, GPS distance logging, and MAVLink NamedValueFloat for ArduPilot logs.",
-        "icon": "mdi-wifi-settings",
+        "description": "RouterOS wireless link metrics, GPS distance and bearing to the boat, CSV logging, and MAVLink NamedValueFloat for ArduPilot logs.",
+        "icon": "mdi-router-wireless",
         "company": "BlueBoat / Community",
-        "version": "1.0.0",
-        "webpage": "https://github.com/",
-        "api": "https://github.com/",
+        "version": "1.2.0",
+        "webpage": "https://github.com/vshie/Mikrotik-Monitor",
+        "api": "https://github.com/vshie/Mikrotik-Monitor",
+        "works_in_relative_paths": True,
     }
     return JSONResponse(payload)
 
@@ -68,6 +69,7 @@ async def api_status():
         "last_link": st.last_link,
         "last_gps": st.last_gps,
         "last_distance_m": st.last_distance_m,
+        "last_bearing_deg": st.last_bearing_deg,
         "vehicle_system_id": st.vehicle_system_id,
         "last_mavlink_errors": st.last_mavlink_errors,
         "rows_logged": st.rows_logged,
