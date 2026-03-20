@@ -99,10 +99,20 @@ If login fails with **invalid user name or password (6)** but you used a placeho
 
 When the script prints **Login OK** and lists registration paths, the same **username / password / plaintext / port** behavior applies in the extension **Settings** (plain API is port **8728** unless you only expose SSL).
 
+### `admin` / `admin` works in Winbox but API says error 6
+
+Winbox and the **API use different permission flags**. RouterOS often returns **invalid user name or password (6)** for API when the account is **not allowed to log in via API**, even if the password is correct.
+
+1. **Winbox** → **System** → **Users** → **Groups** → open the group used by `admin` (often `full`).
+2. Ensure **API** is allowed (RouterOS 6: **Policies** / policy string must include `api`; RouterOS 7: enable **api** in the group’s login / policy UI).
+3. CLI check (SSH to the router): `/user group print detail` — the `policy` line for that group should include **`api`** among the flags (`read`, `write`, `api`, …).
+
+After the group allows API, use **username `admin`**, password **`admin`**, **legacy plaintext off**, port **8728** in the extension Settings (same as a successful test script run).
+
 ### Troubleshooting: ping works but no SNR / signal fields
 
 1. **API login (RouterOS 6.43+)** — Default is **challenge login** (`router_plaintext_login`: **off**). If login still fails, enable **Legacy plaintext API login** in Settings only for very old RouterOS.
-2. **User permissions** — Use a MikroTik user allowed to query interfaces (e.g. **full** group or API policy that permits read).
+2. **User permissions** — User group must allow **API** login (see above), not only Winbox. Then **read** access is enough to query the registration table.
 3. **Empty registration table** — Metrics exist only when the radio is a **station associated to an AP**. If disconnected, the table is empty (dashboard explains this).
 4. **wifiwave2** — On some **RouterOS 7+** builds, link stats live under **`/interface/wifiwave2/registration-table`**; leave **Also try wifiwave2** enabled (default). On pure 6.x, the second path may error in logs; that is harmless.
 5. **Dashboard** — After updating, the UI shows **RouterOS / MAVLink diagnostic text** when data is missing; check container logs for the same.

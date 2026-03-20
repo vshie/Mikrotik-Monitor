@@ -121,11 +121,12 @@ def main() -> int:
     except Exception as e:
         print(f"LOGIN FAILED: {e}", file=sys.stderr)
         print(
-            "\nThis is RouterOS rejecting /login (error 6 = bad user or password), not a bug in the script.\n"
+            "\nRouterOS rejected /login (often shown as error 6). That is not a bug in this script.\n"
             "Checklist:\n"
-            "  • Use the same password that works in Winbox / WebFig for this user.\n"
-            "  • Do not paste README placeholders; use MIKROTIK_API_PASSWORD or -p with the real secret.\n"
-            "  • System → Users → your user: allowed to log in via API (group / profile).\n"
+            "  • If admin/admin works in Winbox but NOT here: the user's GROUP must allow API login.\n"
+            "    Winbox → System → Users → Groups → [admin's group] → enable API in policies.\n"
+            "    CLI: /user group print detail  (policy should include the flag api)\n"
+            "  • Otherwise: same password as Winbox/WebFig; avoid README placeholders in -p.\n"
             "  • IP → Services: 'api' enabled on 8728 (or try --ssl --port 8729 if only api-ssl is on).\n"
             "  • Try without --plaintext first (RouterOS 6.43+); add --plaintext only if you know you need it.\n",
             file=sys.stderr,
