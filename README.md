@@ -109,6 +109,17 @@ Winbox and the **API use different permission flags**. RouterOS often returns **
 
 After the group allows API, use **username `admin`**, password **`admin`**, **legacy plaintext off**, port **8728** in the extension Settings (same as a successful test script run).
 
+### Groups already list `api` in the policy, but login still fails
+
+The **Groups** screen only shows what each group *can* do. Check the **user** and **service** side:
+
+1. **System → Users → Users** — Open **`admin`**. Confirm **Group** is **`full`** (or **`read`** / **`write`**, which also include `api` per default groups). A **custom** group might omit `api` even if `full` has it.
+2. **Allowed address** on that user — Must include the client IP (e.g. `192.168.2.0/24`) or **`0.0.0.0/0`**. If it’s too narrow, API login can fail with a misleading message.
+3. **IP → Services → api** — Service **enabled**, port **8728**, and **Available From** (or address list) must allow the **same** subnet as your test PC / BlueOS host (not only Winbox’s subnet).
+4. Confirm **`192.168.2.4`** is the same device you’re viewing in WebFig (not a different radio).
+
+Optional isolation: add a user **`api-test`** in group **`read`**, password **`test123`**, allowed address **`0.0.0.0/0`**, then run `scripts/test_mikrotik_api.py` with that user.
+
 ### Troubleshooting: ping works but no SNR / signal fields
 
 1. **API login (RouterOS 6.43+)** — Default is **challenge login** (`router_plaintext_login`: **off**). If login still fails, enable **Legacy plaintext API login** in Settings only for very old RouterOS.
