@@ -27,6 +27,15 @@ import argparse
 import os
 import sys
 
+def _login_modes_for_script(force_plaintext: bool, password: str) -> list[bool]:
+    """Match app/mikrotik_client.py (empty password → try plaintext-style /login first)."""
+    if force_plaintext:
+        return [True]
+    if password == "":
+        return [True, False]
+    return [False, True]
+
+
 _PLACEHOLDER_PASSWORDS = frozenset(
     {
         "ACTUAL_ROUTER_PASSWORD",
@@ -88,46 +97,58 @@ def main() -> int:
         return 1
 
     pw_note = "empty password (factory-style)" if password == "" else f"password_len={len(password)}"
+    modes = _login_modes_for_script(args.plaintext, password)
     print(
         f"Connecting {args.username}@{args.host}:{port} "
-        f"(ssl={args.ssl}, plaintext_login={args.plaintext}, {pw_note})..."
+        f"(ssl={args.ssl}, will try plaintext_login={modes}, {pw_note})..."
     )
 
     pool = None
-    try:
-        if args.ssl:
-            pool = routeros_api.RouterOsApiPool(
-                args.host,
-                username=args.username,
-                password=password,
-                port=port,
-                plaintext_login=args.plaintext,
-                use_ssl=True,
-                ssl_verify=False,
-                ssl_verify_hostname=False,
-            )
-        else:
-            pool = routeros_api.RouterOsApiPool(
-                args.host,
-                username=args.username,
-                password=password,
-                port=port,
-                plaintext_login=args.plaintext,
-            )
-        api = pool.get_api()
-        print("Login OK — API credentials are accepted. Querying paths the extension uses:\n")
-    except Exception as e:
-        print(f"LOGIN FAILED: {e}", file=sys.stderr)
+    api = None
+    last_err: Exception | None = None
+    for pl in modes:
+        try:
+            if args.ssl:
+                pool = routeros_api.RouterOsApiPool(
+                    args.host,
+                    username=args.username,
+                    password=password,
+                    port=port,
+                    plaintext_login=pl,
+                    use_ssl=True,
+                    ssl_verify=False,
+                    ssl_verify_hostname=False,
+                )
+            else:
+                pool = routeros_api.RouterOsApiPool(
+                    args.host,
+                    username=args.username,
+                    password=password,
+                    port=port,
+                    plaintext_login=pl,
+                )
+            api = pool.get_api()
+            print(f"Login OK — plaintext_login={pl}. Querying paths the extension uses:\n")
+            break
+        except Exception as e:
+            last_err = e
+            print(f"  try plaintext_login={pl} failed: {e}", file=sys.stderr)
+            if pool is not None:
+                try:
+                    pool.disconnect()
+                except Exception:
+                    pass
+                pool = None
+
+    if api is None:
+        print(f"\nLOGIN FAILED after trying {modes}. Last error: {last_err}", file=sys.stderr)
         print(
-            "\nRouterOS rejected /login (often shown as error 6). That is not a bug in this script.\n"
+            "\nRouterOS rejected /login (often shown as error 6).\n"
             "Checklist:\n"
-            "  • If admin/admin works in Winbox but NOT here: the user's GROUP must allow API login.\n"
-            "    Winbox → System → Users → Groups → [admin's group] → enable API in policies.\n"
-            "    CLI: /user group print detail  (policy should include the flag api)\n"
-            "  • If you never set a password: use empty password (omit -p; do not use -p admin).\n"
-            "  • Otherwise: same password as Winbox/WebFig; avoid README placeholders in -p.\n"
-            "  • IP → Services: 'api' enabled on 8728 (or try --ssl --port 8729 if only api-ssl is on).\n"
-            "  • Try without --plaintext first (RouterOS 6.43+); add --plaintext only if you know you need it.\n",
+            "  • Empty password: script tries plaintext-style /login first, then challenge (see MikroTik API docs).\n"
+            "  • WebFig with admin + no password: leave password empty; do not use -p admin.\n"
+            "  • User group must allow API; IP → Services → api enabled on 8728.\n"
+            "  • Force legacy only: add --plaintext (single mode).\n",
             file=sys.stderr,
         )
         return 1

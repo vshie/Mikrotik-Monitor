@@ -85,6 +85,8 @@ After 6.43, login is **not** “send username+password once in plain text” in 
 
 Many devices still ship with user **`admin`** and **no password**. In that case the password string must be **empty** — using **`admin` as the password** will fail with error 6. In **Settings**, leave **Password** blank; in the test script, omit `-p` and do not set `MIKROTIK_API_PASSWORD` (or set it to an empty string).
 
+The extension and test script **try two API login styles** when the password is empty: **plaintext-style** `/login` with `=name=` and `=password=` (as in the docs), then **challenge-style** if the first fails. Some RouterOS 6.x builds only accept the first for a blank password.
+
 ### Test API from your laptop (same network as `192.168.2.4`)
 
 On a computer that can reach the radio (e.g. `ping 192.168.2.4`):

@@ -56,7 +56,7 @@
           <label>User <input name="router_username" type="text" autocomplete="username" /></label>
           <label>Password
             <input name="router_password" type="password" autocomplete="current-password" placeholder="empty = no password" />
-            <span class="hint">Leave empty if the router still uses the default <strong>admin</strong> user with no password (see MikroTik API login docs).</span>
+            <span class="hint">Leave empty for WebFig-style <strong>admin</strong> with no password. The app tries both API login methods automatically when this is empty.</span>
           </label>
           <label>Poll interval (s) <input name="poll_interval_s" type="number" step="0.1" min="0.2" max="60" /></label>
           <label class="check"><input name="router_plaintext_login" type="checkbox" /> Legacy plaintext API login (RouterOS &lt; 6.43 only)</label>

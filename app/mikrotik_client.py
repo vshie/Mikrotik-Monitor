@@ -21,36 +21,61 @@ def _parse_numeric(value: Any) -> float | None:
         return None
 
 
-def _one_fetch(
+def _login_plaintext_modes(user_wants_plaintext: bool, password: str) -> list[bool]:
+    """Order of plaintext_login flag to try with routeros-api.
+
+    MikroTik post-6.43 docs describe a single ``/login`` with ``=name=`` and ``=password=``
+    (empty password allowed). That maps to ``plaintext_login=True`` in socialwifi/routeros-api.
+
+    The older two-step challenge (first ``/login``, then ``=response=``) uses
+    ``plaintext_login=False``.
+
+    Many RouterOS 6.x units with **no password** accept only the plaintext-style login;
+    challenge with empty password may still return error 6 on some builds.
+    """
+    if password == "":
+        return [True, False]
+    if user_wants_plaintext:
+        return [True, False]
+    return [False, True]
+
+
+def _fetch_path_with_login_fallback(
     host: str,
     port: int,
     username: str,
     password: str,
-    plaintext_login: bool,
+    plaintext_setting: bool,
     path: str,
 ) -> tuple[list[dict[str, Any]] | None, str | None]:
-    """Returns (rows, None) on success, or (None, error_message) on failure."""
-    pool: Any = None
-    try:
-        pool = routeros_api.RouterOsApiPool(
-            host,
-            username=username,
-            password=password,
-            port=port,
-            plaintext_login=plaintext_login,
-        )
-        api = pool.get_api()
-        reg = api.get_resource(path)
-        rows = reg.get()
-        return rows, None
-    except Exception as e:
-        return None, f"{path}: {e}"
-    finally:
-        if pool is not None:
+    """Return (rows, None) on success, or (None, combined_errors)."""
+    errors: list[str] = []
+    for pl in _login_plaintext_modes(plaintext_setting, password):
+        pool: Any = None
+        try:
+            pool = routeros_api.RouterOsApiPool(
+                host,
+                username=username,
+                password=password,
+                port=port,
+                plaintext_login=pl,
+            )
+            api = pool.get_api()
+            reg = api.get_resource(path)
+            rows = reg.get()
             try:
                 pool.disconnect()
             except Exception:
                 pass
+            return rows, None
+        except Exception as e:
+            if pool is not None:
+                try:
+                    pool.disconnect()
+                except Exception:
+                    pass
+            errors.append(f"plaintext_login={pl}: {e}")
+    return None, " | ".join(errors)
 
 
 def fetch_registration_table(
@@ -65,7 +90,10 @@ def fetch_registration_table(
     """Return (rows, diagnostic).
 
     Tries classic wireless registration table first, then wifiwave2 (RouterOS 7+ / some packages).
-    RouterOS 6.43+ normally needs ``plaintext_login=False`` (challenge login).
+
+    Login: for **empty password**, tries **plaintext-style** ``/login`` first, then challenge-style
+    (see `_login_plaintext_modes`). For non-empty password, tries your **plaintext_login** setting
+    first, then the other mode.
     """
     paths: list[str] = ["/interface/wireless/registration-table"]
     if try_wifiwave2:
@@ -73,9 +101,11 @@ def fetch_registration_table(
 
     notes: list[str] = []
     for path in paths:
-        rows, err = _one_fetch(host, port, username, password, plaintext_login, path)
+        rows, err = _fetch_path_with_login_fallback(
+            host, port, username, password, plaintext_login, path
+        )
         if err is not None:
-            notes.append(err)
+            notes.append(f"{path}: {err}")
             continue
         assert rows is not None
         if rows:
