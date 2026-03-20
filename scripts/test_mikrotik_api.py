@@ -6,29 +6,83 @@ Test RouterOS API from any machine on the same L2/L3 network as the radio
 Uses the same routeros-api + login modes as the BlueOS extension.
 
   pip install routeros-api
-  python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin --password 'YOURPASS'
-  python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin --password 'YOURPASS' --plaintext
 
-RouterOS 6.43+: omit --plaintext (challenge login). Use --plaintext only for old ROS or special setups.
+  # Prefer env var so the real password is not in shell history:
+  export MIKROTIK_API_PASSWORD='your-real-router-password'
+  python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin
+
+  # Or inline (replace with the actual password, not a placeholder):
+  python scripts/test_mikrotik_api.py --host 192.168.2.4 -u admin -p 'your-real-router-password'
+
+  python scripts/test_mikrotik_api.py ... --plaintext   # only for old ROS / special cases
+  python scripts/test_mikrotik_api.py ... --ssl --port 8729   # if only api-ssl is enabled
+
+RouterOS 6.43+: omit --plaintext (challenge login).
 """
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+
+_PLACEHOLDER_PASSWORDS = frozenset(
+    {
+        "ACTUAL_ROUTER_PASSWORD",
+        "YOURPASS",
+        "YOUR_ROUTER_PASSWORD",
+        "YOUR_REAL_ROUTER_PASSWORD",
+    }
+)
+
+
+def _resolve_password(arg_password: str | None) -> str | None:
+    if arg_password is not None:
+        return arg_password
+    return os.environ.get("MIKROTIK_API_PASSWORD")
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Test MikroTik API + registration tables")
     p.add_argument("--host", default="192.168.2.4", help="RouterOS IP")
-    p.add_argument("--port", type=int, default=8728, help="API port (8728 default)")
+    p.add_argument("--port", type=int, default=None, help="8728 plain API, 8729 typical for SSL")
     p.add_argument("--username", "-u", default="admin")
-    p.add_argument("--password", "-p", default="admin")
+    p.add_argument(
+        "--password",
+        "-p",
+        default=None,
+        help="Router password (or set env MIKROTIK_API_PASSWORD)",
+    )
     p.add_argument(
         "--plaintext",
         action="store_true",
         help="Legacy plaintext /login (RouterOS < 6.43 style). Default is challenge login (6.43+).",
     )
+    p.add_argument(
+        "--ssl",
+        action="store_true",
+        help="Use API over TLS (often port 8729). Self-signed cert verification is disabled for this test.",
+    )
     args = p.parse_args()
+
+    password = _resolve_password(args.password)
+    if not password:
+        print(
+            "No password: pass -p '...' or export MIKROTIK_API_PASSWORD='...'",
+            file=sys.stderr,
+        )
+        return 1
+
+    if password in _PLACEHOLDER_PASSWORDS:
+        print(
+            f'ERROR: password looks like a README placeholder ("{password}"). '
+            "Use the real password you use in Winbox/WebFig for this router.",
+            file=sys.stderr,
+        )
+        return 1
+
+    port = args.port
+    if port is None:
+        port = 8729 if args.ssl else 8728
 
     try:
         import routeros_api
@@ -37,25 +91,43 @@ def main() -> int:
         return 1
 
     print(
-        f"Connecting {args.username}@{args.host}:{args.port} "
-        f"(plaintext_login={args.plaintext})..."
+        f"Connecting {args.username}@{args.host}:{port} "
+        f"(ssl={args.ssl}, plaintext_login={args.plaintext}, password_len={len(password)})..."
     )
 
     pool = None
     try:
-        pool = routeros_api.RouterOsApiPool(
-            args.host,
-            username=args.username,
-            password=args.password,
-            port=args.port,
-            plaintext_login=args.plaintext,
-        )
+        if args.ssl:
+            pool = routeros_api.RouterOsApiPool(
+                args.host,
+                username=args.username,
+                password=password,
+                port=port,
+                plaintext_login=args.plaintext,
+                use_ssl=True,
+                ssl_verify=False,
+                ssl_verify_hostname=False,
+            )
+        else:
+            pool = routeros_api.RouterOsApiPool(
+                args.host,
+                username=args.username,
+                password=password,
+                port=port,
+                plaintext_login=args.plaintext,
+            )
         api = pool.get_api()
-        print("Login OK.\n")
+        print("Login OK — API credentials are accepted. Querying paths the extension uses:\n")
     except Exception as e:
         print(f"LOGIN FAILED: {e}", file=sys.stderr)
         print(
-            "\nHints: wrong password; API user not allowed; try without --plaintext for ROS 6.43+;",
+            "\nThis is RouterOS rejecting /login (error 6 = bad user or password), not a bug in the script.\n"
+            "Checklist:\n"
+            "  • Use the same password that works in Winbox / WebFig for this user.\n"
+            "  • Do not paste README placeholders; use MIKROTIK_API_PASSWORD or -p with the real secret.\n"
+            "  • System → Users → your user: allowed to log in via API (group / profile).\n"
+            "  • IP → Services: 'api' enabled on 8728 (or try --ssl --port 8729 if only api-ssl is on).\n"
+            "  • Try without --plaintext first (RouterOS 6.43+); add --plaintext only if you know you need it.\n",
             file=sys.stderr,
         )
         return 1
@@ -71,7 +143,9 @@ def main() -> int:
             print(f"  rows: {len(rows)}")
             if rows:
                 keys = sorted(rows[0].keys())
-                print(f"  first row keys ({len(keys)}): {', '.join(keys[:20])}{' ...' if len(keys) > 20 else ''}")
+                print(
+                    f"  first row keys ({len(keys)}): {', '.join(keys[:20])}{' ...' if len(keys) > 20 else ''}"
+                )
         except Exception as e:
             print(f"{path}")
             print(f"  ERROR: {e}")
@@ -80,6 +154,11 @@ def main() -> int:
         pool.disconnect()
     except Exception:
         pass
+
+    print(
+        "\nIf login OK but wireless path shows 0 rows, the station may not be associated to an AP "
+        "(registration table empty until linked)."
+    )
     return 0
 
 

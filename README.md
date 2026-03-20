@@ -86,14 +86,18 @@ cd /path/to/this/repo
 python3 -m venv .venv && source .venv/bin/activate
 pip install routeros-api
 
-# Try challenge login first (RouterOS 6.43+ — matches extension default)
-python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin --password 'YOUR_ROUTER_PASSWORD'
-
-# Only if you know you need legacy mode:
-python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin --password 'YOUR_ROUTER_PASSWORD' --plaintext
+# Use the REAL password (Winbox/WebFig), not a README placeholder string.
+export MIKROTIK_API_PASSWORD='paste-the-actual-password-here'
+python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin
 ```
 
-When this script prints **Login OK** and shows **rows** for a registration path, use the **same username, password, and plaintext checkbox** in the extension Settings.
+If login fails with **invalid user name or password (6)** but you used a placeholder like `ACTUAL_ROUTER_PASSWORD` in `-p`, RouterOS is literally checking that string — it is not a template.
+
+- **Challenge login** (default, no `--plaintext`) is correct for RouterOS 6.43+; you should see a `/login ... =response=...` step before failure if the API is reachable.
+- **Legacy**: add `--plaintext` only if you know the router requires it.
+- **API-SSL only**: try `python scripts/test_mikrotik_api.py --host 192.168.2.4 -u admin --ssl --port 8729` (after setting `MIKROTIK_API_PASSWORD`).
+
+When the script prints **Login OK** and lists registration paths, the same **username / password / plaintext / port** behavior applies in the extension **Settings** (plain API is port **8728** unless you only expose SSL).
 
 ### Troubleshooting: ping works but no SNR / signal fields
 
