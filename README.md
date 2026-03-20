@@ -39,6 +39,13 @@ Change **Settings** for per-vehicle items: **reference coordinates**, **mavlink2
 
 4. Open the extension from the BlueOS sidebar; set **Settings** (router IP, credentials, reference lat/lon, mavlink URLs).
 
+### Web UI under BlueOS (no broken CSS / 404 on `/static`)
+
+BlueOS often serves extensions under a **path prefix** (e.g. `/extensionv2/…/`). The browser must load **`static/styles.css`**, **`static/app.js`**, and **`api/…`** **relative to that prefix**. This app injects a **`<base href>`** from `location.pathname` and uses **relative** asset and API URLs so they resolve correctly. Using **leading slashes** (`/static/…`, `/api/…`) would request the **BlueOS host root** and typically **404**, which looks like “no CSS” and a blank chart.
+
+- **Offline / no CDN:** **Chart.js** is vendored as **`static/vendor/chart.umd.min.js`**; the UI does not depend on the public internet to load.
+- **`theme_style.css` 404** in the console is usually **BlueOS** injecting a theme stylesheet into the extension iframe, not something shipped by this extension; it can be ignored unless your BlueOS build provides that file.
+
 ### Manual install (copy-paste)
 
 Use this single JSON object in the manual install UI. The **`permissions`** field is a **string** (escaped JSON) exactly as BlueOS expects when the form shows `"permissions": "{}"` by default — replace that empty object with the string below.

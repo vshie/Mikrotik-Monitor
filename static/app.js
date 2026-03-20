@@ -45,7 +45,7 @@ async function fetchJSON(url, opts) {
 
 async function refreshStatus() {
   try {
-    const s = await fetchJSON("/api/status");
+    const s = await fetchJSON("api/status");
     const good = s.reachable;
     $("#reach").textContent = good
       ? `Reachable (${s.reach_method || "?"})`
@@ -123,7 +123,7 @@ function parseTS(row) {
 }
 
 async function loadChart() {
-  const { points } = await fetchJSON("/api/history?minutes=20");
+  const { points } = await fetchJSON("api/history?minutes=20");
   const labels = [];
   const snr = [];
   const sig = [];
@@ -251,7 +251,7 @@ function settingsInit() {
     }
 
     try {
-      await fetchJSON("/api/settings", {
+      await fetchJSON("api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

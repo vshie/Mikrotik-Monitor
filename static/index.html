@@ -4,16 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mikrotik Link Monitor</title>
-  <link rel="stylesheet" href="/static/styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
-  <script src="/static/app.js" defer></script>
+  <!-- BlueOS serves this app under a prefix (e.g. /extensionv2/.../); base makes relative URLs work. -->
+  <script>
+    (function () {
+      var p = location.pathname;
+      var href = p.endsWith("/") ? p : p + "/";
+      var b = document.createElement("base");
+      b.href = href;
+      var after = document.querySelector("meta[charset]");
+      document.head.insertBefore(b, after && after.nextSibling ? after.nextSibling : document.head.firstChild);
+    })();
+  </script>
+  <link rel="stylesheet" href="static/styles.css" />
+  <script src="vendor/chart.umd.min.js" defer></script>
+  <script src="static/app.js" defer></script>
 </head>
 <body>
   <div class="page">
     <header class="hero" role="banner">
       <img
         class="hero-img"
-        src="/static/extension-hero.png"
+        src="static/extension-hero.png"
         width="1200"
         height="630"
         alt="Mikrotik Monitor — BlueBoat link metrics"
@@ -48,7 +59,7 @@
           <div class="card">
             <h2>MAVLink</h2>
             <p id="mav-errors" class="small muted">—</p>
-            <p class="small"><a id="csv-dl" href="/api/download/csv">Download CSV</a></p>
+            <p class="small"><a id="csv-dl" href="api/download/csv">Download CSV</a></p>
           </div>
         </div>
 
