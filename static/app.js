@@ -61,6 +61,37 @@ function fmtBearing(deg) {
   return `${d.toFixed(1)}° (${dirs[idx]}, toward boat)`;
 }
 
+/** Display-only: up to 6 decimal places (WGS84 °). Full values still used server-side. */
+function fmtLatLon6(lat, lon) {
+  if (lat == null || lon == null || !Number.isFinite(lat) || !Number.isFinite(lon)) return "—";
+  return `${Number(lat).toFixed(6)} ${Number(lon).toFixed(6)}`;
+}
+
+function syncRefInputsFromStatus(s) {
+  const latIn = $("#ref-lat");
+  const lonIn = $("#ref-lon");
+  if (!latIn || !lonIn) return;
+  const refFocused =
+    document.activeElement === latIn || document.activeElement === lonIn;
+  if (refFocused) return;
+  const rl = s.reference_latitude;
+  const rlo = s.reference_longitude;
+  latIn.value = rl != null && rl !== "" && Number.isFinite(Number(rl)) ? String(rl) : "";
+  lonIn.value = rlo != null && rlo !== "" && Number.isFinite(Number(rlo)) ? String(rlo) : "";
+  const copyEl = $("#ref-coords-copy");
+  if (copyEl) {
+    const la = rl != null && rl !== "" ? Number(rl) : NaN;
+    const lo = rlo != null && rlo !== "" ? Number(rlo) : NaN;
+    if (Number.isFinite(la) && Number.isFinite(lo)) {
+      copyEl.hidden = false;
+      copyEl.textContent = fmtLatLon6(la, lo);
+    } else {
+      copyEl.hidden = true;
+      copyEl.textContent = "";
+    }
+  }
+}
+
 async function fetchJSON(path, opts) {
   const r = await fetch(apiUrl(path), opts);
   if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
@@ -116,9 +147,12 @@ async function refreshStatus() {
     }
 
     const g = s.last_gps;
-    $("#gps-line").textContent = g
-      ? `${g.lat.toFixed(6)}, ${g.lon.toFixed(6)}`
-      : "No position fix";
+    const boatEl = $("#boat-coords");
+    if (boatEl) {
+      boatEl.textContent = g && Number.isFinite(g.lat) && Number.isFinite(g.lon) ? fmtLatLon6(g.lat, g.lon) : "No position fix";
+    }
+
+    syncRefInputsFromStatus(s);
 
     const d = s.last_distance_m;
     $("#dist-line").textContent =
@@ -234,7 +268,7 @@ async function loadChart() {
 }
 
 async function loadSettingsForm() {
-  const s = await fetchJSON("/api/settings");
+  const s = await fetchJSON("api/settings");
   const form = $("#settings-form");
   for (const [k, v] of Object.entries(s)) {
     const el = form.elements.namedItem(k);
@@ -272,19 +306,6 @@ function settingsInit() {
     body.router_plaintext_login = form.elements.router_plaintext_login.checked;
     body.router_try_wifiwave2 = form.elements.router_try_wifiwave2.checked;
 
-    const lat = form.reference_latitude.value.trim();
-    const lon = form.reference_longitude.value.trim();
-    body.reference_latitude = lat === "" ? null : Number(lat);
-    body.reference_longitude = lon === "" ? null : Number(lon);
-    if (body.reference_latitude !== null && !Number.isFinite(body.reference_latitude)) {
-      msg.textContent = "Invalid reference latitude";
-      return;
-    }
-    if (body.reference_longitude !== null && !Number.isFinite(body.reference_longitude)) {
-      msg.textContent = "Invalid reference longitude";
-      return;
-    }
-
     try {
       await fetchJSON("api/settings", {
         method: "PUT",
@@ -306,8 +327,65 @@ function wireCsvDownloadLink() {
   if (a) a.href = apiUrl("api/download/csv");
 }
 
+function refGeoInit() {
+  const form = $("#ref-geo-form");
+  if (!form) return;
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const msg = $("#ref-geo-msg");
+    const latIn = $("#ref-lat");
+    const lonIn = $("#ref-lon");
+    const latStr = latIn.value.trim();
+    const lonStr = lonIn.value.trim();
+    if (msg) msg.textContent = "";
+    if (latStr === "" && lonStr === "") {
+      try {
+        await fetchJSON("api/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference_latitude: null, reference_longitude: null }),
+        });
+        if (msg) msg.textContent = "Cleared reference.";
+      } catch (e) {
+        if (msg) msg.textContent = `Error: ${e.message}`;
+      }
+      refreshStatus();
+      return;
+    }
+    const lat = Number(latStr);
+    const lon = Number(lonStr);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      if (msg) msg.textContent = "Enter valid decimal latitude and longitude.";
+      return;
+    }
+    if (lat < -90 || lat > 90) {
+      if (msg) msg.textContent = "Latitude must be between -90 and 90.";
+      return;
+    }
+    if (lon < -180 || lon > 180) {
+      if (msg) msg.textContent = "Longitude must be between -180 and 180.";
+      return;
+    }
+    try {
+      await fetchJSON("api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference_latitude: lat, reference_longitude: lon }),
+      });
+      if (msg) msg.textContent = "Saved.";
+    } catch (e) {
+      if (msg) msg.textContent = `Error: ${e.message}`;
+    }
+    refreshStatus();
+    setTimeout(() => {
+      if (msg) msg.textContent = "";
+    }, 3500);
+  });
+}
+
 tabInit();
 settingsInit();
+refGeoInit();
 wireCsvDownloadLink();
 loadSettingsForm();
 refreshStatus();

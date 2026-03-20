@@ -75,6 +75,8 @@ async def api_status():
         "rows_logged": st.rows_logged,
         "mavlink_enabled": cfg.mavlink_enabled,
         "registration_path": st.registration_path,
+        "reference_latitude": cfg.reference_latitude,
+        "reference_longitude": cfg.reference_longitude,
     }
 
 

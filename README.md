@@ -24,7 +24,7 @@ This extension is **shipped for one on-board profile** (validated on hardware):
 | Credentials | User **`admin`**, **empty password** (WebFig default); API uses plaintext-style `/login` first, then challenge if needed |
 | wifiwave2 | **Disabled** (RouterOS 7+ path not used on this radio) |
 
-Change **Settings** for per-vehicle items: **reference coordinates**, **mavlink2rest** URLs, **poll interval**. Other router toggles remain for rare overrides only.
+Set the **reference point** on the **Dashboard** under **Range and Bearing** (Apply). Use **Settings** for router, **mavlink2rest** URLs, and **poll interval**.
 
 ## BlueOS install
 
@@ -37,7 +37,7 @@ Change **Settings** for per-vehicle items: **reference coordinates**, **mavlink2
 
 3. In **Extensions**, install from the Bazaar, **or** use **manual install** (paste JSON below). Do **not** leave `permissions` empty — use the value below so port **80**, **`host.docker.internal`**, the **`/data`** bind, and **`NET_RAW`** (ICMP) are applied.
 
-4. Open the extension from the BlueOS sidebar; set **Settings** (router IP, credentials, reference lat/lon, mavlink URLs).
+4. Open the extension from the BlueOS sidebar; set **reference coordinates** on the Dashboard and **Settings** (router IP, credentials, mavlink URLs).
 
 ### Web UI under BlueOS (no broken CSS / 404 on `/static`)
 

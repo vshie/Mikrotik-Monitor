@@ -56,9 +56,35 @@
 
         <div class="card card--range">
           <h2>Range and Bearing</h2>
-          <p id="gps-line" class="metric">—</p>
-          <p id="dist-line" class="metric accent">—</p>
-          <p id="brng-line" class="metric accent">—</p>
+          <table class="coords-table">
+            <tbody>
+              <tr>
+                <th scope="row">BlueBoat</th>
+                <td class="coords-cell mono" id="boat-coords">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Reference</th>
+                <td>
+                  <form id="ref-geo-form" class="ref-geo-row">
+                    <input id="ref-lat" type="text" inputmode="decimal" autocomplete="off" placeholder="Lat °" aria-label="Reference latitude" />
+                    <input id="ref-lon" type="text" inputmode="decimal" autocomplete="off" placeholder="Lon °" aria-label="Reference longitude" />
+                    <button type="submit" class="btn-inline">Apply</button>
+                  </form>
+                  <div
+                    class="coords-cell mono coords-saved"
+                    id="ref-coords-copy"
+                    hidden
+                    title="Saved reference (6 decimal places), space-separated for copy/paste"
+                  ></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="range-metrics">
+            <p id="dist-line" class="metric accent">—</p>
+            <p id="brng-line" class="metric accent">—</p>
+          </div>
+          <p id="ref-geo-msg" class="small muted ref-geo-msg" aria-live="polite"></p>
         </div>
 
         <section class="chart-block" aria-labelledby="chart-heading">
@@ -83,11 +109,6 @@
             <label>Poll interval (s) <input name="poll_interval_s" type="number" step="0.1" min="0.2" max="60" /></label>
             <label class="check"><input name="router_plaintext_login" type="checkbox" /> Legacy plaintext API login (RouterOS &lt; 6.43 only)</label>
             <label class="check"><input name="router_try_wifiwave2" type="checkbox" /> Also try wifiwave2 registration table (RouterOS 7+ only; leave off for v6)</label>
-          </fieldset>
-          <fieldset>
-            <legend>Reference point (decimal degrees)</legend>
-            <label>Latitude <input name="reference_latitude" type="text" placeholder="e.g. 33.812" /></label>
-            <label>Longitude <input name="reference_longitude" type="text" placeholder="e.g. -118.389" /></label>
           </fieldset>
           <fieldset>
             <legend>mavlink2rest</legend>

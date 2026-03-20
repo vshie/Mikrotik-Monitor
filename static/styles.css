@@ -86,8 +86,99 @@ body {
 
 .card--range {
   margin: 0 auto 0.75rem;
-  padding: 0.7rem 0.95rem;
+  padding: 0.65rem 0.85rem;
   max-width: 36rem;
+}
+
+.coords-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.coords-table th {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.2rem 0.5rem 0.2rem 0;
+  width: 5.25rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+}
+
+.coords-table td {
+  padding: 0.15rem 0;
+  vertical-align: top;
+}
+
+.coords-cell {
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.ref-geo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.ref-geo-row input {
+  width: 6.5rem;
+  padding: 0.28rem 0.35rem;
+  font: inherit;
+  font-size: 0.78rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.btn-inline {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+  border: none;
+  border-radius: 5px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-inline:hover {
+  filter: brightness(1.05);
+}
+
+.coords-saved {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+.range-metrics {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.range-metrics .metric {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.ref-geo-msg {
+  margin: 0.35rem 0 0;
+  min-height: 1.1em;
 }
 
 @media (max-width: 780px) {
