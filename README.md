@@ -59,12 +59,14 @@ Use these values to fill out the manual install UI. The **`permissions`** field 
 
 
   "identifier": "mikrotik.monitor",
+  
   "name": "Mikrotik Monitor",
+ 
   "docker": "vshie/blueos-mikrotik-monitor",
+ 
   "tag": "main",
-  "permissions": "{\"ExposedPorts\":{\"80/tcp\":{}},\"HostConfig\":{\"ExtraHosts\":[\"host.docker.internal:host-gateway\"],\"PortBindings\":{\"80/tcp\":[{\"HostPort\":\"\"}]},\"Binds\":[\"/usr/blueos/extensions/mikrotik-monitor:/data\"],\"CapAdd\":[\"NET_RAW\"]}}"
-
-```
+  
+  "permissions": see below
 
 Equivalent **`permissions`** value, formatted for reading (must be **stringified** into `permissions` as above if the UI only accepts a string):
 
