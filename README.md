@@ -35,7 +35,7 @@ Set the **reference point** on the **Dashboard** under **Range and Bearing** (Ap
    sudo mkdir -p /usr/blueos/extensions/mikrotik-monitor
    ```
 
-3. In **Extensions**, install from the Bazaar, **or** use **manual install** (paste JSON below). Do **not** leave `permissions` empty — use the value below so port **80**, **`host.docker.internal`**, the **`/data`** bind, and **`NET_RAW`** (ICMP) are applied.
+3. In **Extensions**, use **manual install** . Do **not** leave `permissions` empty — use the value below so port **80**, **`host.docker.internal`**, the **`/data`** bind, and **`NET_RAW`** (ICMP) are applied.
 
 4. Open the extension from the BlueOS sidebar; set **reference coordinates** on the Dashboard and **Settings** (router IP, credentials, mavlink URLs).
 
@@ -55,16 +55,15 @@ Do not use root-absolute paths (`/api/…`, `/static/…`) in this UI.
 
 ### Manual install (copy-paste)
 
-Use this single JSON object in the manual install UI. The **`permissions`** field is a **string** (escaped JSON) exactly as BlueOS expects when the form shows `"permissions": "{}"` by default — replace that empty object with the string below.
+Use these values to fill out the manual install UI. The **`permissions`** field is a **string** (escaped JSON) exactly as BlueOS expects when the form shows `"permissions": "{}"` by default — replace that empty object with the string below.
 
-```json
-{
+
   "identifier": "mikrotik.monitor",
   "name": "Mikrotik Monitor",
   "docker": "vshie/blueos-mikrotik-monitor",
   "tag": "main",
   "permissions": "{\"ExposedPorts\":{\"80/tcp\":{}},\"HostConfig\":{\"ExtraHosts\":[\"host.docker.internal:host-gateway\"],\"PortBindings\":{\"80/tcp\":[{\"HostPort\":\"\"}]},\"Binds\":[\"/usr/blueos/extensions/mikrotik-monitor:/data\"],\"CapAdd\":[\"NET_RAW\"]}}"
-}
+
 ```
 
 Equivalent **`permissions`** value, formatted for reading (must be **stringified** into `permissions` as above if the UI only accepts a string):
