@@ -119,7 +119,6 @@ The extension and test script **try two API login styles** when the password is 
 4. **wifiwave2** — Default is **off** (BlueBoat / RouterOS 6.x). Enable **Also try wifiwave2** only on **RouterOS 7+** where classic wireless is empty but wifiwave2 has the station.
 5. **Dashboard** — After updating, the UI shows **RouterOS / MAVLink diagnostic text** when data is missing; check container logs for the same.
 
-## Local test (Docker Desktop)
 
 
 ## Position note
