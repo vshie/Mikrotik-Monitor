@@ -29,11 +29,7 @@ Set the **reference point** on the **Dashboard** under **Range and Bearing** (Ap
 ## BlueOS install
 
 1. Enable **API** on the MikroTik (**IP → Services → api**), same subnet as the companion (e.g. `192.168.2.0/24`). This is typically enabled by default.
-2. Ensure the host data directory exists (settings + CSV persist here):
 
-   ```bash
-   sudo mkdir -p /usr/blueos/extensions/mikrotik-monitor
-   ```
 
 3. In **Extensions**, use **manual install** . Do **not** leave `permissions` empty — use the value below so port **80**, **`host.docker.internal`**, the **`/data`** bind, and **`NET_RAW`** (ICMP) are applied.
 
@@ -41,17 +37,11 @@ Set the **reference point** on the **Dashboard** under **Range and Bearing** (Ap
 
 ### Web UI under BlueOS (no broken CSS / 404 on `/static`)
 
-BlueOS often serves extensions under a **path prefix** (e.g. `/extensionv2/…/`). In some embed modes the iframe **`location.pathname` is still `/`**, so a `<base href>` derived only from `location` sends **`api/…`** to the main BlueOS app (`/api/settings` → BlueOS HTML shell → **404** and empty settings).
-
 This app uses:
 
-1. **`static/init-base.js`** — a **synchronous** first script that sets **`<base href>`** from **`document.currentScript.src`** (the real extension URL), so CSS, Chart, and `app.js` resolve before paint.
-2. **`app.js`** — builds **`APP_ROOT`** from the resolved **`static/app.js`** URL and calls **`fetch(apiUrl("api/status"))`** etc., so API requests always hit the extension container, not BlueOS port 80.
 
-Do not use root-absolute paths (`/api/…`, `/static/…`) in this UI.
 
 - **Offline / no CDN:** **Chart.js** is vendored as **`static/vendor/chart.umd.min.js`**.
-- **`theme_style.css` 404** in the console is usually **BlueOS** injecting a theme stylesheet into the extension iframe, not this extension.
 
 ### Manual install (copy-paste)
 
@@ -92,7 +82,6 @@ Equivalent **`permissions`** value, formatted for reading (must be **stringified
 }
 ```
 
-Change **`docker`** / **`tag`** if you use another registry or image tag. **`identifier`** should stay a stable id for the same extension across upgrades.
 
 ### mavlink2rest URLs
 
@@ -116,52 +105,11 @@ Official reference: [MikroTik API — protocol and login](https://help.mikrotik.
 
 After 6.43, login is **not** “send username+password once in plain text” in the way older clients did. The documented flow is a **two-step** `/login`: the router returns a challenge (`=ret=…`), then the client sends `=name=` and `=response=` where **`=response=` is derived from the password** (including an **empty** password). The `routeros-api` library does this when **legacy plaintext** is **off** (extension default).
 
-Many devices still ship with user **`admin`** and **no password**. In that case the password string must be **empty** — using **`admin` as the password** will fail with error 6. In **Settings**, leave **Password** blank; in the test script, omit `-p` and do not set `MIKROTIK_API_PASSWORD` (or set it to an empty string).
+Standard BlueBoat devices ship with user **`admin`** and **no password**. In that case the password string must be **empty** — using **`admin` as the password** will fail with error 6. In **Settings**, leave **Password** blank; in the test script, omit `-p` and do not set `MIKROTIK_API_PASSWORD` (or set it to an empty string).
 
 The extension and test script **try two API login styles** when the password is empty: **plaintext-style** `/login` with `=name=` and `=password=` (as in the docs), then **challenge-style** if the first fails. Some RouterOS 6.x builds only accept the first for a blank password.
 
-### Test API from your laptop (same network as `192.168.2.4`)
 
-On a computer that can reach the radio (e.g. `ping 192.168.2.4`):
-
-```bash
-cd /path/to/this/repo
-python3 -m venv .venv && source .venv/bin/activate
-pip install routeros-api
-
-# Use the REAL password (Winbox/WebFig), not a README placeholder string.
-export MIKROTIK_API_PASSWORD='paste-the-actual-password-here'
-python scripts/test_mikrotik_api.py --host 192.168.2.4 --username admin
-```
-
-If login fails with **invalid user name or password (6)** but you used a placeholder like `ACTUAL_ROUTER_PASSWORD` in `-p`, RouterOS is literally checking that string — it is not a template.
-
-- **Challenge login** (default, no `--plaintext`) is correct for RouterOS 6.43+; you should see a `/login ... =response=...` step before failure if the API is reachable.
-- **Legacy**: add `--plaintext` only if you know the router requires it.
-- **API-SSL only**: try `python scripts/test_mikrotik_api.py --host 192.168.2.4 -u admin --ssl --port 8729` (after setting `MIKROTIK_API_PASSWORD`).
-
-When the script prints **Login OK** and lists registration paths, the same **username / password / plaintext / port** behavior applies in the extension **Settings** (plain API is port **8728** unless you only expose SSL).
-
-### `admin` / `admin` works in Winbox but API says error 6
-
-Winbox and the **API use different permission flags**. RouterOS often returns **invalid user name or password (6)** for API when the account is **not allowed to log in via API**, even if the password is correct.
-
-1. **Winbox** → **System** → **Users** → **Groups** → open the group used by `admin` (often `full`).
-2. Ensure **API** is allowed (RouterOS 6: **Policies** / policy string must include `api`; RouterOS 7: enable **api** in the group’s login / policy UI).
-3. CLI check (SSH to the router): `/user group print detail` — the `policy` line for that group should include **`api`** among the flags (`read`, `write`, `api`, …).
-
-After the group allows API, use **username `admin`**, password **`admin`**, **legacy plaintext off**, port **8728** in the extension Settings (same as a successful test script run).
-
-### Groups already list `api` in the policy, but login still fails
-
-The **Groups** screen only shows what each group *can* do. Check the **user** and **service** side:
-
-1. **System → Users → Users** — Open **`admin`**. Confirm **Group** is **`full`** (or **`read`** / **`write`**, which also include `api` per default groups). A **custom** group might omit `api` even if `full` has it.
-2. **Allowed address** on that user — Must include the client IP (e.g. `192.168.2.0/24`) or **`0.0.0.0/0`**. If it’s too narrow, API login can fail with a misleading message.
-3. **IP → Services → api** — Service **enabled**, port **8728**, and **Available From** (or address list) must allow the **same** subnet as your test PC / BlueOS host (not only Winbox’s subnet).
-4. Confirm **`192.168.2.4`** is the same device you’re viewing in WebFig (not a different radio).
-
-Optional isolation: add a user **`api-test`** in group **`read`**, password **`test123`**, allowed address **`0.0.0.0/0`**, then run `scripts/test_mikrotik_api.py` with that user.
 
 ### Troubleshooting: ping works but no SNR / signal fields
 
@@ -173,63 +121,6 @@ Optional isolation: add a user **`api-test`** in group **`read`**, password **`t
 
 ## Local test (Docker Desktop)
 
-```bash
-docker compose up --build
-```
-
-Browse **http://localhost:8080**. Logs and settings land in **`./data`**.
-
-## Cross-build for Raspberry Pi (local)
-
-BlueOS on Pi often needs **`linux/arm/v7`** (32-bit OS) or **`linux/arm64`** (64-bit Pi OS / Pi 4 default image). From a Mac or PC with Docker Buildx + QEMU (Docker Desktop enables this by default):
-
-**ARMv7 (32-bit, e.g. older Pi OS armhf):**
-
-```bash
-docker buildx build --platform linux/arm/v7 \
-  -t blueos-mikrotik-monitor:armv7 --load .
-```
-
-**ARM64 (Pi 4 with 64-bit OS — common):**
-
-```bash
-docker buildx build --platform linux/arm64 \
-  -t blueos-mikrotik-monitor:arm64 --load .
-```
-
-`--load` loads a **single** platform into the local Docker daemon. To build both without loading: use `--platform linux/arm/v7,linux/arm64` and `--push` to a registry, or `--output type=tar` per platform.
-
-Copy to the Pi (example):
-
-```bash
-docker save blueos-mikrotik-monitor:armv7 | ssh pi@blueos.local docker load
-```
-
-Dependencies use **plain `uvicorn`** (not `uvicorn[standard]`) so **armv7** does not need to compile `uvloop`/`httptools` inside the slim image.
-
-## GitHub Actions
-
-Workflow **`.github/workflows/build.yml`** uses [Deploy-BlueOS-Extension](https://github.com/BlueOS-community/Deploy-BlueOS-Extension). Add repository secrets:
-
-- `DOCKER_USERNAME`
-- `DOCKER_PASSWORD`
-
-Update **`Dockerfile`** `LABEL readme` / build `ARG OWNER` to match your GitHub org and repo after you publish.
-
-## Development
-
-Use **Python 3.12 or 3.13** locally (3.14 may lack `pydantic-core` wheels yet).
-
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-export DATA_DIR=./data
-mkdir -p "$DATA_DIR"
-uvicorn app.main:app --reload --port 8000
-```
-
-Run from the repository root so `app` and `static` resolve correctly.
 
 ## Position note
 
