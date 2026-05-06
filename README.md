@@ -90,6 +90,19 @@ Equivalent **`permissions`** value, formatted for reading (must be **stringified
 - **POST (NamedValueFloat)**: default `http://host.docker.internal:6040/v1/mavlink` — **adjust if your BlueOS build exposes a different port/path** (some setups use the same reverse proxy as GET, e.g. `http://host.docker.internal/mavlink2rest/v1/mavlink`). On the vehicle, confirm the helper schema with:  
   `GET http://<host>:<port>/v1/helper/mavlink?name=NAMED_VALUE_FLOAT`.
 - **Payload shape**: mavlink2rest (rust-mavlink) expects `NAMED_VALUE_FLOAT.name` as **an array of 10 single-character JSON strings**, null-padded — not a plain string — and matches the key order used in working BlueOS extensions (`value` then `name`). If you see `HTTP 404 Failed to parse message, not a valid MAVLinkMessage`, the usual cause is the wrong `name` encoding; see [mavlink2rest#52](https://github.com/mavlink/mavlink2rest/issues/52).
+- **One `component_id` per metric**: mavlink-server's in-memory store is `vehicles[system_id] → components[component_id] → messages[message_type] → latest`, so every `NAMED_VALUE_FLOAT` POSTed from the same `(system_id, component_id)` pair lands in the same slot and only the last write survives for the inspector / `.BIN` log. Each metric therefore occupies its own component slot, computed as **`Component ID base + per-metric offset`** (default base **`60`**):
+
+  | Metric | Offset | Default `component_id` |
+  |--------|-------:|-----------------------:|
+  | `MTK_SNR`   | 0 | 60 |
+  | `MTK_TXDB`  | 1 | 61 |
+  | `MTK_RXDB`  | 2 | 62 |
+  | `MTK_DISTM` | 3 | 63 |
+  | `MTK_BRNG`  | 4 | 64 |
+
+  The default base sits clear of the **BlueOS PH/TEMP/SALINITY/CONDUCT extension** (which uses `25–28`) and well above the standard MAVLink component range. If you stack a third extension that emits `NAMED_VALUE_FLOAT`, just give each one a non-overlapping window via its own base setting.
+
+- **Collision warnings**: on each successful poll (cached for 60 s), the extension probes mavlink2rest for each of its planned `component_id` slots. If a slot already holds a `NAMED_VALUE_FLOAT` whose decoded `name` is *not* one of ours, the dashboard surfaces a warning under the MAVLink status line: `component_id 60 already holds NAMED_VALUE_FLOAT 'PH' (we want 'MTK_SNR'). Shift the Component ID base in Settings to free this slot.` Component IDs are intentionally **not** auto-rotated — anything keyed to a specific `component_id` (GCS panels, Lua scripts, dashboards) would otherwise break across restarts depending on extension start order.
 
 ### RouterOS credentials
 

@@ -122,7 +122,7 @@
             <label class="check"><input name="mavlink_enabled" type="checkbox" /> Send NamedValueFloat</label>
             <label class="check"><input name="mavlink_send_distance" type="checkbox" /> Include distance (MTK_DISTM) and bearing (MTK_BRNG)</label>
             <label>Header system ID <input name="mavlink_header_system_id" type="number" min="1" max="255" /></label>
-            <label>Header component ID <input name="mavlink_header_component_id" type="number" min="0" max="255" /></label>
+            <label title="Base component_id for our NAMED_VALUE_FLOATs. Each metric occupies base + offset: MTK_SNR=base+0, MTK_TXDB=base+1, MTK_RXDB=base+2, MTK_DISTM=base+3, MTK_BRNG=base+4. Default 60 avoids the 25-28 range used by the BlueOS PH/TEMP/SALINITY/CONDUCT extension. If another extension claims any of these slots, mavlink-server will overwrite messages and the inspector / .BIN log will show jumbled values; the dashboard surfaces a warning when it detects this. Shift the base if needed.">Component ID base <input name="mavlink_header_component_id" type="number" min="0" max="251" /></label>
             <label>Target system <input name="target_system" type="number" min="1" max="255" /></label>
             <label>Target component <input name="target_component" type="number" min="0" max="255" /></label>
           </fieldset>

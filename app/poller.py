@@ -13,7 +13,11 @@ import httpx
 from app.csv_log import append_row
 from app.geo import haversine_m, initial_bearing_deg
 from app.mavlink_reader import detect_vehicle_system_id, fetch_global_position
-from app.mavlink_sender import send_named_value_floats
+from app.mavlink_sender import (
+    detect_component_collisions,
+    planned_component_ids,
+    send_named_value_floats,
+)
 from app.mikrotik_client import fetch_registration_table, summarize_link
 from app.reachability import radio_reachable
 from app.settings_store import _data_dir, load_settings
@@ -42,11 +46,47 @@ _cached_sid: int | None = None
 _sid_checked_at: float = 0.0
 _SID_TTL_S = 120.0
 
+# Cached collision-check result. Probing mavlink2rest for slot occupancy on every
+# poll would be wasteful, so we re-check at most every _COLLISION_TTL_S seconds
+# (or immediately when the (read_base, system_id, component_id_base) key changes,
+# e.g. after a settings save). Catches late-starting extensions without spamming.
+_collision_key: tuple[str, int, int] | None = None
+_collision_warnings: list[str] = []
+_collision_checked_at: float = 0.0
+_COLLISION_TTL_S = 60.0
+
 
 def invalidate_vehicle_cache() -> None:
-    global _cached_sid, _sid_checked_at
+    global _cached_sid, _sid_checked_at, _collision_key, _collision_warnings, _collision_checked_at
     _cached_sid = None
     _sid_checked_at = 0.0
+    _collision_key = None
+    _collision_warnings = []
+    _collision_checked_at = 0.0
+
+
+async def _check_component_collisions(
+    client: httpx.AsyncClient,
+    read_base: str,
+    system_id: int,
+    component_id_base: int,
+) -> list[str]:
+    """Return cached collision warnings; refresh from mavlink2rest at most every TTL."""
+    global _collision_key, _collision_warnings, _collision_checked_at
+    key = (read_base, system_id, component_id_base)
+    now = time.monotonic()
+    if key == _collision_key and (now - _collision_checked_at) < _COLLISION_TTL_S:
+        return list(_collision_warnings)
+    planned = planned_component_ids(component_id_base)
+    try:
+        warnings = await detect_component_collisions(read_base, system_id, planned, client)
+    except Exception as e:
+        log.debug("Collision probe failed: %s", e)
+        warnings = []
+    _collision_key = key
+    _collision_warnings = warnings
+    _collision_checked_at = now
+    return list(warnings)
 
 
 def get_state() -> PollerState:
@@ -130,6 +170,7 @@ async def poller_loop(stop: asyncio.Event) -> None:
             if not entries and reg_detail:
                 log.info("RouterOS registration empty/diagnostic: %s", reg_detail)
 
+            sid: int | None = None
             try:
                 sid = await _ensure_system_id(client, s.mavlink_rest_read_base)
                 gps = await fetch_global_position(
@@ -229,6 +270,14 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 if s.mavlink_send_distance and brng is not None:
                     nvf["MTK_BRNG"] = float(brng)
                 if nvf:
+                    collision_warnings: list[str] = []
+                    if sid is not None:
+                        collision_warnings = await _check_component_collisions(
+                            client,
+                            s.mavlink_rest_read_base,
+                            sid,
+                            s.mavlink_header_component_id,
+                        )
                     try:
                         errs = await send_named_value_floats(
                             s.mavlink_rest_post_url,
@@ -237,9 +286,9 @@ async def poller_loop(stop: asyncio.Event) -> None:
                             s.mavlink_header_system_id,
                             s.mavlink_header_component_id,
                         )
-                        _update_state(last_mavlink_errors=errs)
+                        _update_state(last_mavlink_errors=collision_warnings + errs)
                     except Exception as e:
-                        _update_state(last_mavlink_errors=[str(e)])
+                        _update_state(last_mavlink_errors=collision_warnings + [str(e)])
 
             try:
                 await asyncio.wait_for(stop.wait(), timeout=interval)
