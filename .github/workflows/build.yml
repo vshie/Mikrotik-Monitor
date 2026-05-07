@@ -1,16 +1,23 @@
 name: Build and push BlueOS extension
 
 on:
+  # Build on every push to main and on every git tag (semver tags become Docker tags).
   push:
     branches: [main]
+    tags: ['*']
   workflow_dispatch:
+
+permissions:
+  # Required for the release-upload step in the BlueOS-community deploy action,
+  # which attaches per-arch image tarballs to a GitHub Release on git-tag pushes.
+  contents: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Build and push
-        uses: BlueOS-community/Deploy-BlueOS-Extension@main
+        uses: BlueOS-community/Deploy-BlueOS-Extension@v1.2.0
         with:
           docker-username: ${{ secrets.DOCKER_USERNAME }}
           docker-password: ${{ secrets.DOCKER_PASSWORD }}
