@@ -29,6 +29,10 @@ CSV_FIELDS = [
     "bearing_deg",
     "ap_mac",
     "wlan_iface",
+    # Appended last so existing CSV files continue to read fine; csv.DictWriter
+    # silently fills missing keys, so partial header rotation just leaves older
+    # rows with the column blank.
+    "ap_pingable",
 ]
 
 _lock = Lock()

@@ -40,6 +40,7 @@
             <aside class="card card--dash-side">
               <h2>MAVLink</h2>
               <p id="mav-errors" class="small muted">—</p>
+              <p id="watchdog-line" class="small muted">—</p>
               <p class="small"><a id="csv-dl" href="api/download/csv">Download CSV</a></p>
               <h3 class="notes-title">Notes</h3>
               <div class="small muted notes">
@@ -122,9 +123,17 @@
             <label class="check"><input name="mavlink_enabled" type="checkbox" /> Send NamedValueFloat</label>
             <label class="check"><input name="mavlink_send_distance" type="checkbox" /> Include distance (MTK_DISTM) and bearing (MTK_BRNG)</label>
             <label>Header system ID <input name="mavlink_header_system_id" type="number" min="1" max="255" /></label>
-            <label title="Base component_id for our NAMED_VALUE_FLOATs. Each metric occupies base + offset: MTK_SNR=base+0, MTK_TXDB=base+1, MTK_RXDB=base+2, MTK_DISTM=base+3, MTK_BRNG=base+4. Default 60 avoids the 25-28 range used by the BlueOS PH/TEMP/SALINITY/CONDUCT extension. If another extension claims any of these slots, mavlink-server will overwrite messages and the inspector / .BIN log will show jumbled values; the dashboard surfaces a warning when it detects this. Shift the base if needed.">Component ID base <input name="mavlink_header_component_id" type="number" min="0" max="251" /></label>
+            <label title="Base component_id for our NAMED_VALUE_FLOATs. Each metric occupies base + offset: MTK_SNR=base+0, MTK_TXDB=base+1, MTK_RXDB=base+2, MTK_DISTM=base+3, MTK_BRNG=base+4, MTK_OK=base+5, MTK_APUP=base+6. Default 60 avoids the 25-28 range used by the BlueOS PH/TEMP/SALINITY/CONDUCT extension. If another extension claims any of these slots, mavlink-server will overwrite messages and the inspector / .BIN log will show jumbled values; the dashboard surfaces a warning when it detects this. Shift the base if needed.">Component ID base <input name="mavlink_header_component_id" type="number" min="0" max="249" /></label>
             <label>Target system <input name="target_system" type="number" min="1" max="255" /></label>
             <label>Target component <input name="target_component" type="number" min="0" max="255" /></label>
+            <label class="check" title="When on, emit MTK_OK=1.0 and MTK_APUP=1/0 every cycle so the autopilot log explicitly records the extension being alive and the wireless-link state. Without this, an absence of MTK_* could mean either the extension stopped or the link went down -- you cannot tell apart from the .BIN log."><input name="emit_heartbeat" type="checkbox" /> Emit MTK_OK / MTK_APUP heartbeat NVFs</label>
+          </fieldset>
+          <fieldset>
+            <legend>Resilience and watchdog</legend>
+            <label title="Topside / base-station radio IP. An independent task ICMP-pings this address and restarts the poller after a False->True transition (link regained). Also published as the MTK_APUP heartbeat NVF (1.0 if up, 0.0 if down). Set to whatever 192.168.x address you can reach from this side when the link is up.">AP IP (topside radio) <input name="ap_radio_ip" type="text" placeholder="192.168.2.3" /></label>
+            <label title="Socket timeout passed to the routeros-api library. Caps how long any single API call can block when the wireless link drops mid-call. Default 3 s. Without this cap the call can hang for the OS TCP timeout -- this is what wedged the loop at the 17:06 cutoff in the reference .BIN log.">RouterOS API socket timeout (s) <input name="routeros_api_timeout_s" type="number" step="0.5" min="0.5" max="30" /></label>
+            <label title="How often the independent watchdog task pings the AP IP. Default 5 s.">Watchdog ping interval (s) <input name="watchdog_check_interval_s" type="number" step="0.5" min="1" max="60" /></label>
+            <label title="Minimum interval between watchdog-triggered poller restarts. Stops a flapping AP link from causing back-to-back restarts. Default 10 s.">Watchdog restart debounce (s) <input name="watchdog_restart_debounce_s" type="number" step="1" min="0" max="300" /></label>
           </fieldset>
           <div class="actions full">
             <button type="submit" class="primary">Save settings</button>

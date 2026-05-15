@@ -165,6 +165,24 @@ async function refreshStatus() {
     const errs = s.last_mavlink_errors || [];
     $("#mav-errors").textContent =
       errs.length > 0 ? errs.join(" · ") : s.mavlink_enabled === false ? "Disabled" : "OK";
+
+    const wd = $("#watchdog-line");
+    if (wd) {
+      const ip = s.ap_radio_ip || "(unset)";
+      const ap = s.ap_pingable;
+      const apLabel = ap === true ? "UP" : ap === false ? "DOWN" : "unknown";
+      const restarts = Number.isFinite(Number(s.poller_restarts)) ? Number(s.poller_restarts) : 0;
+      const sinceRestart = s.seconds_since_last_restart;
+      const sinceRestartStr =
+        sinceRestart == null ? "never (this process)" : `${Math.round(sinceRestart)}s ago`;
+      const sinceRegTo = s.seconds_since_last_registration_timeout;
+      const regToStr =
+        sinceRegTo == null ? "none observed" : `last ${Math.round(sinceRegTo)}s ago`;
+      wd.textContent =
+        `AP ${ip}: ${apLabel} · poller restarts: ${restarts} (last ${sinceRestartStr})` +
+        ` · routeros hard-timeouts: ${regToStr}`;
+      wd.style.color = ap === false ? "var(--bad)" : "var(--muted, #5c6b7a)";
+    }
   } catch (e) {
     $("#reach").textContent = "Status error";
     $("#reach").style.color = "var(--bad)";
@@ -359,6 +377,18 @@ function settingsInit() {
     body.mavlink_send_distance = form.elements.mavlink_send_distance.checked;
     body.router_plaintext_login = form.elements.router_plaintext_login.checked;
     body.router_try_wifiwave2 = form.elements.router_try_wifiwave2.checked;
+    if (form.elements.routeros_api_timeout_s) {
+      body.routeros_api_timeout_s = Number(body.routeros_api_timeout_s);
+    }
+    if (form.elements.watchdog_check_interval_s) {
+      body.watchdog_check_interval_s = Number(body.watchdog_check_interval_s);
+    }
+    if (form.elements.watchdog_restart_debounce_s) {
+      body.watchdog_restart_debounce_s = Number(body.watchdog_restart_debounce_s);
+    }
+    if (form.elements.emit_heartbeat) {
+      body.emit_heartbeat = form.elements.emit_heartbeat.checked;
+    }
 
     try {
       await fetchJSON("api/settings", {

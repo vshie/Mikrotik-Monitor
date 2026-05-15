@@ -20,6 +20,13 @@ NAMED_VALUE_OFFSETS: dict[str, int] = {
     "MTK_RXDB": 2,
     "MTK_DISTM": 3,
     "MTK_BRNG": 4,
+    # Heartbeat values: emitted every poll cycle so the .BIN log unambiguously
+    # records the extension being alive (MTK_OK) and the wireless-link state
+    # (MTK_APUP). In the 17:06 reference trace, MTK_SNR vanished and there was
+    # no way from the log alone to distinguish "extension crashed" from "link
+    # down" -- these two NVFs make that distinction explicit.
+    "MTK_OK": 5,    # always 1.0 while the poller is running
+    "MTK_APUP": 6,  # 1.0 if the AP at ap_radio_ip is pingable, 0.0 otherwise
 }
 
 

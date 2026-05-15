@@ -7,7 +7,8 @@ BlueBoat-oriented extension that:
 - Reads **GPS** from BlueOS **mavlink2rest** (same URL pattern as [pingSurvey](https://github.com/vshie/pingSurvey)).
 - Computes **great-circle distance** and **true compass bearing** from your **reference point** to the **BlueBoat** (WGS84; bearing is clockwise from north, 0–360°).
 - Appends all of the above to **`/data/mikrotik_link.csv`** (persistent volume), including column **`bearing_deg`** when a fix and reference are available.
-- Sends **`NAMED_VALUE_FLOAT`** messages (`MTK_SNR`, `MTK_TXDB`, `MTK_RXDB`, and when enabled `MTK_DISTM` + **`MTK_BRNG`**) via **POST** to mavlink2rest so values appear in ArduPilot **.BIN** logs.
+- Sends **`NAMED_VALUE_FLOAT`** messages (`MTK_SNR`, `MTK_TXDB`, `MTK_RXDB`, and when enabled `MTK_DISTM` + **`MTK_BRNG`**, plus optional `MTK_OK` / `MTK_APUP` heartbeats) via **POST** to mavlink2rest so values appear in ArduPilot **.BIN** logs.
+- **Self-heals across wireless-link drops**: an independent watchdog task ICMP-pings the topside AP (default `192.168.2.3`) and cancels & restarts the poller on a `False → True` transition. The RouterOS API call also runs with a hard socket timeout (default 3 s) and an asyncio-level ceiling, so a wedged TCP half-open from a mid-call link drop can no longer freeze the loop indefinitely.
 
 ### Bazaar store icon
 
@@ -99,8 +100,22 @@ Equivalent **`permissions`** value, formatted for reading (must be **stringified
   | `MTK_RXDB`  | 2 | 62 |
   | `MTK_DISTM` | 3 | 63 |
   | `MTK_BRNG`  | 4 | 64 |
+  | `MTK_OK`    | 5 | 65 |
+  | `MTK_APUP`  | 6 | 66 |
 
   The default base sits clear of the **BlueOS PH/TEMP/SALINITY/CONDUCT extension** (which uses `25–28`) and well above the standard MAVLink component range. If you stack a third extension that emits `NAMED_VALUE_FLOAT`, just give each one a non-overlapping window via its own base setting.
+
+### Robustness across wireless drops
+
+The reference symptom this guards against (seen in a real BlueBoat log `00000230.BIN`): all five `MTK_*` values populate at the normal ~1 s cadence for the first 17 minutes, then stop within the same 40 ms window and never resume for the remaining 74 minutes — even though the boat keeps moving and other extensions keep publishing. Root cause: the wireless link to the topside AP went bad mid-call, the `routeros-api` socket hung on a half-open TCP read inside an `asyncio.to_thread` worker, the asyncio task parked, and no recovery happened.
+
+Three mechanisms work together to prevent that wedge from becoming permanent:
+
+1. **`routeros-api` socket timeout** (default 3 s, configurable). Caps how long any single API call can block the worker thread; without this the underlying socket can wait for the OS TCP timeout (minutes).
+2. **Asyncio hard ceiling** around the `to_thread(fetch_registration_table, …)` call as belt-and-braces — the cycle proceeds to publish heartbeats and CSV even if the underlying call itself is misbehaving.
+3. **Independent AP-ping watchdog task**. Pings `ap_radio_ip` (default `192.168.2.3`) every `watchdog_check_interval_s` (default 5 s) on its **own** `asyncio.to_thread` worker so a wedged routeros-api worker can't starve it. On a `False → True` transition (link regained), debounced by `watchdog_restart_debounce_s` (default 10 s), it cancels the current poller task and creates a fresh one. While the AP is sustained-unpingable it deliberately does nothing — restarting the poller cannot fix being out of range.
+
+Independently, `MTK_DISTM` / `MTK_BRNG` are decoupled from `link_summary` so they keep flowing whenever GPS + a saved reference exist, and `MTK_OK` (`1.0` while the poller is running) and `MTK_APUP` (`1.0` / `0.0` of current AP ping) are emitted every cycle when **Emit heartbeat NVFs** is on, so the `.BIN` log unambiguously distinguishes *"extension stopped"* from *"link went down"*.
 
 - **Collision warnings**: on each successful poll (cached for 60 s), the extension probes mavlink2rest for each of its planned `component_id` slots. If a slot already holds a `NAMED_VALUE_FLOAT` whose decoded `name` is *not* one of ours, the dashboard surfaces a warning under the MAVLink status line: `component_id 60 already holds NAMED_VALUE_FLOAT 'PH' (we want 'MTK_SNR'). Shift the Component ID base in Settings to free this slot.` Component IDs are intentionally **not** auto-rotated — anything keyed to a specific `component_id` (GCS panels, Lua scripts, dashboards) would otherwise break across restarts depending on extension start order.
 

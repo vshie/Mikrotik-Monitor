@@ -24,6 +24,30 @@ class AppSettings(BaseModel):
     router_try_wifiwave2: bool = False
     poll_interval_s: float = Field(default=1.0, ge=0.2, le=60.0)
 
+    # Topside / base-station AP IP. An independent watchdog task ICMP-pings
+    # this address and restarts the poller task on a False -> True transition
+    # (link regained). Also published as MTK_APUP heartbeat NVF (1.0 / 0.0).
+    ap_radio_ip: str = "192.168.2.3"
+
+    # Socket-level timeout on the routeros-api API session. Without this the
+    # library waits the OS TCP timeout when a peer goes half-open, which is
+    # exactly the failure that wedged the loop at 17:06 in the reference log
+    # (.BIN trace: all five MTK_* names stop within 40 ms of each other and
+    # never recover). With a 3 s cap the loop self-heals once the link is back.
+    routeros_api_timeout_s: float = Field(default=3.0, ge=0.5, le=30.0)
+
+    # AP watchdog cadence and debounce. The watchdog pings every check_interval
+    # and triggers a poller restart on transition; the debounce keeps a flapping
+    # link from causing back-to-back restarts.
+    watchdog_check_interval_s: float = Field(default=5.0, ge=1.0, le=60.0)
+    watchdog_restart_debounce_s: float = Field(default=10.0, ge=0.0, le=300.0)
+
+    # Always emit MTK_OK = 1.0 (alive) and MTK_APUP = 1.0/0.0 every poll cycle
+    # so the autopilot .BIN log records the extension and link state explicitly
+    # -- prevents the "absence of data could mean anything" ambiguity we hit in
+    # the 17:06 trace.
+    emit_heartbeat: bool = True
+
     mavlink_rest_read_base: str = "http://host.docker.internal/mavlink2rest/mavlink"
     mavlink_rest_post_url: str = "http://host.docker.internal:6040/v1/mavlink"
     mavlink_enabled: bool = True

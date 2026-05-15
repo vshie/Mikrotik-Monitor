@@ -26,12 +26,12 @@ ARG OWNER=vshie
 # Unprefixed labels are read by the BlueOS-Extensions-Repository scraper.
 # org.blueos.* duplicates are kept for backward compatibility with anything
 # that still expects the legacy prefix.
-LABEL version="1.2.0"
+LABEL version="1.3.0"
 LABEL type="device-integration"
 LABEL requirements="core >= 1.1"
 LABEL tags='["communication", "data-collection", "navigation"]'
 
-LABEL org.blueos.version="1.2.0"
+LABEL org.blueos.version="1.3.0"
 LABEL org.blueos.type="device-integration"
 LABEL org.blueos.requirements="core >= 1.1"
 LABEL org.blueos.tags='["communication", "data-collection", "navigation"]'
