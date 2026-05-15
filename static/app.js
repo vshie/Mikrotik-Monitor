@@ -165,38 +165,6 @@ async function refreshStatus() {
     const errs = s.last_mavlink_errors || [];
     $("#mav-errors").textContent =
       errs.length > 0 ? errs.join(" · ") : s.mavlink_enabled === false ? "Disabled" : "OK";
-
-    // Watchdog / AP probe summary. Shown verbatim so an operator can see at a
-    // glance whether the supervisor is in a healthy state or about to fire.
-    const wd = $("#watchdog-line");
-    if (wd) {
-      const apIp = s.ap_radio_ip || "?";
-      const apState =
-        s.ap_pingable === true
-          ? "up"
-          : s.ap_pingable === false
-            ? "DOWN"
-            : "?";
-      const since = s.seconds_since_last_publish;
-      const stallS = s.poll_stall_restart_s;
-      const sincePart =
-        since == null
-          ? "no successful publish yet"
-          : `last publish ${since.toFixed(1)}s ago`;
-      const stallPart = stallS != null ? ` (stall threshold ${Math.round(stallS)}s)` : "";
-      const restarts = Number(s.poller_restarts || 0);
-      const restartPart = restarts > 0 ? ` · watchdog restarts: ${restarts}` : "";
-      const timeoutS = s.seconds_since_last_registration_timeout;
-      const timeoutPart =
-        timeoutS != null && timeoutS < 5 * stallS
-          ? ` · last RouterOS hard-timeout ${timeoutS.toFixed(1)}s ago`
-          : "";
-      wd.textContent = `AP ${apIp}: ${apState} · ${sincePart}${stallPart}${restartPart}${timeoutPart}`;
-      wd.style.color =
-        s.ap_pingable === false || (since != null && stallS != null && since > stallS)
-          ? "var(--bad)"
-          : "";
-    }
   } catch (e) {
     $("#reach").textContent = "Status error";
     $("#reach").style.color = "var(--bad)";
@@ -391,9 +359,6 @@ function settingsInit() {
     body.mavlink_send_distance = form.elements.mavlink_send_distance.checked;
     body.router_plaintext_login = form.elements.router_plaintext_login.checked;
     body.router_try_wifiwave2 = form.elements.router_try_wifiwave2.checked;
-    body.routeros_api_timeout_s = Number(body.routeros_api_timeout_s);
-    body.poll_stall_restart_s = Number(body.poll_stall_restart_s);
-    body.emit_heartbeat = form.elements.emit_heartbeat.checked;
 
     try {
       await fetchJSON("api/settings", {

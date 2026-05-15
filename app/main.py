@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.csv_log import csv_path_for_download, read_history
-from app.poller import get_state, invalidate_vehicle_cache, supervised_poller
+from app.poller import get_state, invalidate_vehicle_cache, poller_loop
 from app.settings_store import ensure_data_dir, load_settings, save_settings
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -19,7 +19,7 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     stop = asyncio.Event()
-    task = asyncio.create_task(supervised_poller(stop), name="supervised_poller")
+    task = asyncio.create_task(poller_loop(stop))
     yield
     stop.set()
     task.cancel()
@@ -50,7 +50,7 @@ async def register_service():
         "description": "RouterOS wireless link metrics, GPS distance and bearing to the boat, CSV logging, and MAVLink NamedValueFloat for ArduPilot logs.",
         "icon": "mdi-router-wireless",
         "company": "BlueBoat / Community",
-        "version": "1.3.0",
+        "version": "1.2.0",
         "webpage": "https://github.com/vshie/Mikrotik-Monitor",
         "api": "https://github.com/vshie/Mikrotik-Monitor",
         "works_in_relative_paths": True,
@@ -60,22 +60,8 @@ async def register_service():
 
 @app.get("/api/status")
 async def api_status():
-    import time as _time
-
     st = get_state()
     cfg = load_settings()
-    # Convert monotonic timestamps into "seconds since" deltas the UI can read
-    # without keeping its own clock; the raw monotonic value would be useless
-    # to the browser since it is a process-internal counter.
-    now_m = _time.monotonic()
-    seconds_since_last_publish = (
-        (now_m - st.last_publish_monotonic) if st.last_publish_monotonic is not None else None
-    )
-    seconds_since_last_registration_timeout = (
-        (now_m - st.last_registration_timeout_monotonic)
-        if st.last_registration_timeout_monotonic is not None
-        else None
-    )
     return {
         "reachable": st.reachable,
         "reach_method": st.reach_method,
@@ -91,12 +77,6 @@ async def api_status():
         "registration_path": st.registration_path,
         "reference_latitude": cfg.reference_latitude,
         "reference_longitude": cfg.reference_longitude,
-        "ap_radio_ip": cfg.ap_radio_ip,
-        "ap_pingable": st.ap_pingable,
-        "seconds_since_last_publish": seconds_since_last_publish,
-        "seconds_since_last_registration_timeout": seconds_since_last_registration_timeout,
-        "poller_restarts": st.poller_restarts,
-        "poll_stall_restart_s": cfg.poll_stall_restart_s,
     }
 
 

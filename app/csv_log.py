@@ -29,10 +29,6 @@ CSV_FIELDS = [
     "bearing_deg",
     "ap_mac",
     "wlan_iface",
-    # Always appended at the end so older CSVs that were written without this
-    # column stay readable by DictReader (the extra cell gets dropped on read);
-    # new files include it in the header so downstream tools can use it.
-    "ap_pingable",
 ]
 
 _lock = Lock()

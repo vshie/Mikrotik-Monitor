@@ -24,28 +24,6 @@ class AppSettings(BaseModel):
     router_try_wifiwave2: bool = False
     poll_interval_s: float = Field(default=1.0, ge=0.2, le=60.0)
 
-    # Topside (base-station) AP IP. We ping this every cycle and publish the
-    # result as MTK_APUP (1.0 / 0.0); it is also the gating signal for the
-    # watchdog: when no NAMED_VALUE_FLOAT has been published successfully for
-    # `poll_stall_restart_s` *and* the AP is reachable, the supervisor restarts
-    # the poller task. If the AP is unpingable we deliberately do NOT restart
-    # (there is nothing for the poller to recover -- the link is genuinely down).
-    ap_radio_ip: str = "192.168.2.3"
-
-    # Socket-level timeout (seconds) on the routeros-api API session. Without
-    # this the library can hang for the full kernel TCP timeout (~2h) if the
-    # boat-side MikroTik becomes unresponsive after the TCP handshake.
-    routeros_api_timeout_s: float = Field(default=3.0, ge=0.5, le=30.0)
-
-    # Watchdog: max seconds with no successful NAMED_VALUE_FLOAT publish before
-    # the supervisor restarts the poller task (only when the AP is reachable).
-    poll_stall_restart_s: float = Field(default=30.0, ge=5.0, le=600.0)
-
-    # Always emit MTK_OK and MTK_APUP heartbeat NVFs so the autopilot's .BIN
-    # log unambiguously records the extension being alive and the wireless
-    # link state, even when there are no link statistics to report.
-    emit_heartbeat: bool = True
-
     mavlink_rest_read_base: str = "http://host.docker.internal/mavlink2rest/mavlink"
     mavlink_rest_post_url: str = "http://host.docker.internal:6040/v1/mavlink"
     mavlink_enabled: bool = True
