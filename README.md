@@ -7,7 +7,13 @@ BlueBoat-oriented extension that:
 - Reads **GPS** from BlueOS **mavlink2rest** (same URL pattern as [pingSurvey](https://github.com/vshie/pingSurvey)).
 - Computes **great-circle distance** and **true compass bearing** from your **reference point** to the **BlueBoat** (WGS84; bearing is clockwise from north, 0–360°).
 - Appends all of the above to **`/data/mikrotik_link.csv`** (persistent volume), including column **`bearing_deg`** when a fix and reference are available.
-- Sends **`NAMED_VALUE_FLOAT`** messages (`MTK_SNR`, `MTK_TXDB`, `MTK_RXDB`, and when enabled `MTK_DISTM` + **`MTK_BRNG`**) via **POST** to mavlink2rest so values appear in ArduPilot **.BIN** logs.
+- Sends **`NAMED_VALUE_FLOAT`** messages (`MTK_SNR`, `MTK_TXDB`, `MTK_RXDB`, and when enabled `MTK_DISTM` + **`MTK_BRNG`**) via **POST** to mavlink2rest so values appear in ArduPilot **.BIN** logs. Two heartbeat NVFs are also emitted every poll cycle:
+  - **`MTK_OK`** (always **1.0** while the poller is running) — proves the extension is alive in the autopilot log even when the wireless link is down.
+  - **`MTK_APUP`** (**1.0** if the topside AP at `ap_radio_ip` is pingable, **0.0** otherwise) — records the wireless-link state independently of the boat-side RouterOS API.
+
+  `MTK_DISTM` / `MTK_BRNG` are **decoupled from the wireless link state**: as long as boat GPS + a saved reference are available, distance and bearing are POSTed even when the radio link to the AP is down.
+
+- Survives spotty wireless connections without operator intervention. The RouterOS API call is bounded by a per-socket timeout (default 3 s) and an asyncio-level hard timeout, and a supervisor watches the time since the last successful publish: when it exceeds `poll_stall_restart_s` (default 30 s) **and** the configured `ap_radio_ip` is currently pingable, the supervisor cancels and re-creates the poller task. When the AP is *not* pingable the supervisor deliberately does nothing — the wireless link is genuinely down and a fresh poller has nothing to recover.
 
 ### Bazaar store icon
 

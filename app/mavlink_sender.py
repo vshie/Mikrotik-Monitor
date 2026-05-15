@@ -20,6 +20,11 @@ NAMED_VALUE_OFFSETS: dict[str, int] = {
     "MTK_RXDB": 2,
     "MTK_DISTM": 3,
     "MTK_BRNG": 4,
+    # Heartbeat values: always emitted every poll cycle so the autopilot's .BIN
+    # log proves the extension is alive even when there are no link statistics
+    # (radio link down, registration table empty, etc.).
+    "MTK_OK": 5,    # always 1.0 while the loop is running
+    "MTK_APUP": 6,  # 1.0 if the AP at ap_radio_ip is pingable, 0.0 otherwise
 }
 
 

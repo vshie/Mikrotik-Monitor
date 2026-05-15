@@ -40,6 +40,7 @@
             <aside class="card card--dash-side">
               <h2>MAVLink</h2>
               <p id="mav-errors" class="small muted">—</p>
+              <p id="watchdog-line" class="small muted">—</p>
               <p class="small"><a id="csv-dl" href="api/download/csv">Download CSV</a></p>
               <h3 class="notes-title">Notes</h3>
               <div class="small muted notes">
@@ -107,8 +108,15 @@
               <span class="hint">Leave empty for WebFig-style <strong>admin</strong> with no password. The app tries both API login methods automatically when this is empty.</span>
             </label>
             <label>Poll interval (s) <input name="poll_interval_s" type="number" step="0.1" min="0.2" max="60" /></label>
+            <label title="ICMP socket timeout per RouterOS API call. Default 3s. Caps how long a half-open MikroTik can wedge the poll loop before we move on and emit heartbeat values instead.">RouterOS API timeout (s) <input name="routeros_api_timeout_s" type="number" step="0.5" min="0.5" max="30" /></label>
             <label class="check"><input name="router_plaintext_login" type="checkbox" /> Legacy plaintext API login (RouterOS &lt; 6.43 only)</label>
             <label class="check"><input name="router_try_wifiwave2" type="checkbox" /> Also try wifiwave2 registration table (RouterOS 7+ only; leave off for v6)</label>
+          </fieldset>
+          <fieldset>
+            <legend>Watchdog &amp; AP probe</legend>
+            <label title="Topside / base-station AP IP. Pinged every cycle; result published as MTK_APUP (1.0/0.0). When the poller goes silent and this AP IS pingable, the supervisor restarts the poller task; when it is NOT pingable, no restart -- the wireless link is genuinely down.">Base-station AP IP <input name="ap_radio_ip" type="text" /></label>
+            <label title="Maximum seconds without any successful NAMED_VALUE_FLOAT publish before the supervisor cancels and re-creates the poller task (gated on the AP being pingable).">Watchdog stall threshold (s) <input name="poll_stall_restart_s" type="number" step="1" min="5" max="600" /></label>
+            <label class="check" title="Always emit MTK_OK = 1.0 and MTK_APUP (1.0/0.0) every poll cycle so the autopilot's .BIN log records the extension being alive and the wireless link state even when there are no link statistics to report."><input name="emit_heartbeat" type="checkbox" /> Emit MTK_OK + MTK_APUP heartbeat NVFs every cycle</label>
           </fieldset>
           <fieldset>
             <legend>mavlink2rest</legend>

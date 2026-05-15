@@ -84,8 +84,15 @@ def _fetch_path_with_login_fallback(
     password: str,
     plaintext_setting: bool,
     path: str,
+    socket_timeout_s: float,
 ) -> tuple[list[dict[str, Any]] | None, str | None]:
-    """Return (rows, None) on success, or (None, combined_errors)."""
+    """Return (rows, None) on success, or (None, combined_errors).
+
+    socket_timeout_s caps how long any single send/recv on the API socket can
+    block; without it the library defaults to 15s, and a TCP-half-open peer
+    can still wedge the call for that long. We push it down to a few seconds
+    so the asyncio loop never freezes waiting on a flaky radio.
+    """
     errors: list[str] = []
     for pl in _login_plaintext_modes(plaintext_setting, password):
         pool: Any = None
@@ -97,6 +104,10 @@ def _fetch_path_with_login_fallback(
                 port=port,
                 plaintext_login=pl,
             )
+            # Sets the socket_timeout attribute consulted when the real socket
+            # is built inside get_api(); the DummySocket.settimeout call is a
+            # safe no-op until then.
+            pool.set_timeout(socket_timeout_s)
             api = pool.get_api()
             reg = api.get_resource(path)
             rows = reg.get()
@@ -123,6 +134,7 @@ def fetch_registration_table(
     *,
     plaintext_login: bool = False,
     try_wifiwave2: bool = True,
+    socket_timeout_s: float = 3.0,
 ) -> tuple[list[dict[str, Any]], str]:
     """Return (rows, diagnostic).
 
@@ -131,6 +143,10 @@ def fetch_registration_table(
     Login: for **empty password**, tries **plaintext-style** ``/login`` first, then challenge-style
     (see `_login_plaintext_modes`). For non-empty password, tries your **plaintext_login** setting
     first, then the other mode.
+
+    socket_timeout_s is passed through to the routeros-api socket so a single
+    flaky RouterOS API call cannot block this function for more than a few
+    seconds (default upstream is 15s; default here is 3s).
     """
     paths: list[str] = ["/interface/wireless/registration-table"]
     if try_wifiwave2:
@@ -139,7 +155,7 @@ def fetch_registration_table(
     notes: list[str] = []
     for path in paths:
         rows, err = _fetch_path_with_login_fallback(
-            host, port, username, password, plaintext_login, path
+            host, port, username, password, plaintext_login, path, socket_timeout_s,
         )
         if err is not None:
             notes.append(f"{path}: {err}")
