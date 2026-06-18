@@ -173,6 +173,26 @@ def main() -> int:
         print(f"  ERROR: {e}")
         rows = []
 
+    # Operating channel (station follows the AP, so config often says
+    # frequency=auto; only `monitor` shows the channel actually in use).
+    if rows:
+        iface = rows[0].get("interface") or "wlan1"
+        try:
+            res = api.get_binary_resource("/interface/wireless")
+            mon = res.call("monitor", {"numbers": iface.encode(), "once": b""})
+            print(f"\n/interface/wireless monitor (numbers={iface}, once)")
+            if mon:
+                m = mon[0]
+                ch = m.get(b"channel") or m.get("channel")
+                if isinstance(ch, (bytes, bytearray)):
+                    ch = ch.decode(errors="replace")
+                print(f"  channel: {ch}")
+            else:
+                print("  monitor returned no rows")
+        except Exception as e:
+            print(f"\n/interface/wireless monitor")
+            print(f"  ERROR: {e}")
+
     wave2 = "/interface/wifiwave2/registration-table"
 
     def _probe_wave2() -> None:

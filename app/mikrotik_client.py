@@ -168,6 +168,102 @@ def fetch_registration_table(
     return [], " | ".join(notes) if notes else "no registration paths tried"
 
 
+def parse_channel_field(channel: Any) -> dict[str, Any]:
+    """Split a RouterOS wireless ``channel`` string into components.
+
+    RouterOS reports the operating channel as e.g. ``"2447/20/gn(30dBm)"`` =
+    ``<frequency-MHz>/<width-MHz>/<band-protocol>(<tx-power>)``. The station
+    follows the AP, so the per-interface config usually shows ``frequency=auto``
+    and only ``/interface wireless monitor`` exposes the channel actually in use.
+
+    Returns a dict with ``channel`` (full string), ``frequency_mhz`` and
+    ``channel_width_mhz`` (numeric, or None when not parseable).
+    """
+    out: dict[str, Any] = {
+        "channel": None,
+        "frequency_mhz": None,
+        "channel_width_mhz": None,
+    }
+    if channel is None:
+        return out
+    s = str(channel).strip()
+    if not s or s.upper() == "N/A":
+        return out
+    out["channel"] = s
+    freq = re.match(r"\s*(\d+(?:\.\d+)?)", s)
+    if freq:
+        out["frequency_mhz"] = _parse_numeric(freq.group(1))
+    parts = s.split("/")
+    if len(parts) >= 2:
+        width = re.search(r"\d+(?:\.\d+)?", parts[1])
+        if width:
+            out["channel_width_mhz"] = _parse_numeric(width.group(0))
+    return out
+
+
+def _normalize_monitor_row(row: dict[Any, Any]) -> dict[str, Any]:
+    """get_binary_resource returns bytes keys/values; decode and hyphen-normalize."""
+    out: dict[str, Any] = {}
+    for k, v in row.items():
+        key = k.decode(errors="replace") if isinstance(k, (bytes, bytearray)) else str(k)
+        val = v.decode(errors="replace") if isinstance(v, (bytes, bytearray)) else v
+        out[key.lower().replace("_", "-")] = val
+    return out
+
+
+def fetch_wireless_channel(
+    host: str,
+    port: int,
+    username: str,
+    password: str,
+    interface: str,
+    *,
+    plaintext_login: bool = False,
+    socket_timeout_s: float = 3.0,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Return (channel_info, None) or (None, combined_errors).
+
+    Runs ``/interface wireless monitor once`` for ``interface`` (classic
+    wireless only; wifiwave2 uses a different command set) to read the channel
+    the radio is operating on. This is a separate, best-effort API session from
+    the registration-table fetch: a failure here never affects the core
+    SNR/signal logging, it just leaves the channel columns blank.
+    """
+    if not interface:
+        return None, "no interface"
+    errors: list[str] = []
+    for pl in _login_plaintext_modes(plaintext_login, password):
+        pool: Any = None
+        try:
+            pool = routeros_api.RouterOsApiPool(
+                host,
+                username=username,
+                password=password,
+                port=port,
+                plaintext_login=pl,
+            )
+            pool.set_timeout(socket_timeout_s)
+            api = pool.get_api()
+            res = api.get_binary_resource("/interface/wireless")
+            mon = res.call("monitor", {"numbers": interface.encode(), "once": b""})
+            try:
+                pool.disconnect()
+            except Exception:
+                pass
+            if not mon:
+                return None, "monitor returned no rows"
+            row = _normalize_monitor_row(mon[0])
+            return parse_channel_field(_pick(row, "channel", "freq", "frequency")), None
+        except Exception as e:
+            if pool is not None:
+                try:
+                    pool.disconnect()
+                except Exception:
+                    pass
+            errors.append(f"plaintext_login={pl}: {e}")
+    return None, " | ".join(errors)
+
+
 def summarize_link(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
     if not entries:
         return None

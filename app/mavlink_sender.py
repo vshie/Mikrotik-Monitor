@@ -27,6 +27,7 @@ NAMED_VALUE_OFFSETS: dict[str, int] = {
     # down" -- these two NVFs make that distinction explicit.
     "MTK_OK": 5,    # always 1.0 while the poller is running
     "MTK_APUP": 6,  # 1.0 if the AP at ap_radio_ip is pingable, 0.0 otherwise
+    "MTK_FREQ": 7,  # operating frequency in MHz (e.g. 2447) from wireless monitor
 }
 
 

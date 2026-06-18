@@ -18,7 +18,11 @@ from app.mavlink_sender import (
     planned_component_ids,
     send_named_value_floats,
 )
-from app.mikrotik_client import fetch_registration_table, summarize_link
+from app.mikrotik_client import (
+    fetch_registration_table,
+    fetch_wireless_channel,
+    summarize_link,
+)
 from app.reachability import icmp_reachable, radio_reachable
 from app.settings_store import _data_dir, load_settings
 
@@ -208,6 +212,32 @@ async def poller_loop(stop: asyncio.Event) -> None:
                         timeout=hard_timeout,
                     )
                     link_summary = summarize_link(entries)
+                    # Channel isn't in the registration table; it comes from
+                    # `/interface wireless monitor`. Only worth a (separate,
+                    # short) API session when we actually have an associated
+                    # link with a known interface. Best-effort: any failure
+                    # just leaves the channel columns blank for this row.
+                    if link_summary and link_summary.get("interface"):
+                        try:
+                            channel_info, _chan_err = await asyncio.wait_for(
+                                asyncio.to_thread(
+                                    fetch_wireless_channel,
+                                    s.router_ip,
+                                    s.router_api_port,
+                                    s.router_username,
+                                    s.router_password,
+                                    link_summary["interface"],
+                                    plaintext_login=s.router_plaintext_login,
+                                    socket_timeout_s=api_timeout,
+                                ),
+                                timeout=api_timeout + 1.0,
+                            )
+                            if channel_info:
+                                link_summary.update(channel_info)
+                        except asyncio.CancelledError:
+                            raise
+                        except Exception as e:
+                            log.debug("Channel monitor fetch failed: %s", e)
                 except asyncio.TimeoutError:
                     registration_hung = True
                     entries = []
@@ -315,6 +345,13 @@ async def poller_loop(stop: asyncio.Event) -> None:
                 # Wireless-link state explicit in CSV so the absence of SNR/signal
                 # later in the file has unambiguous context.
                 "ap_pingable": 1 if ap_pingable else 0,
+                "channel": (link_summary or {}).get("channel") or "",
+                "frequency_mhz": (link_summary or {}).get("frequency_mhz")
+                if link_summary and link_summary.get("frequency_mhz") is not None
+                else "",
+                "channel_width_mhz": (link_summary or {}).get("channel_width_mhz")
+                if link_summary and link_summary.get("channel_width_mhz") is not None
+                else "",
             }
 
             try:
@@ -344,6 +381,8 @@ async def poller_loop(stop: asyncio.Event) -> None:
                         nvf["MTK_TXDB"] = float(link_summary["tx_dbm"])
                     if link_summary.get("rx_dbm") is not None:
                         nvf["MTK_RXDB"] = float(link_summary["rx_dbm"])
+                    if link_summary.get("frequency_mhz") is not None:
+                        nvf["MTK_FREQ"] = float(link_summary["frequency_mhz"])
                 if s.mavlink_send_distance and dist is not None:
                     nvf["MTK_DISTM"] = float(dist)
                 if s.mavlink_send_distance and brng is not None:

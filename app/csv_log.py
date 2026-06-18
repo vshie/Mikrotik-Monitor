@@ -33,6 +33,12 @@ CSV_FIELDS = [
     # silently fills missing keys, so partial header rotation just leaves older
     # rows with the column blank.
     "ap_pingable",
+    # Operating channel the radio is using (from /interface wireless monitor).
+    # "channel" is the raw RouterOS string (e.g. "2447/20/gn(30dBm)"); the two
+    # numeric columns are parsed out of it for easy plotting/filtering.
+    "channel",
+    "frequency_mhz",
+    "channel_width_mhz",
 ]
 
 _lock = Lock()

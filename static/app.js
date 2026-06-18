@@ -137,6 +137,7 @@ async function refreshStatus() {
       ["RX link rate (PHY)", fmtMbps(lk.rx_rate_mbps)],
       ["AP MAC", lk.ap_mac || "—"],
       ["Interface", lk.interface || "—"],
+      ["Channel", lk.channel || "—"],
     ];
     for (const [k, v] of rows) {
       const dt = document.createElement("dt");
